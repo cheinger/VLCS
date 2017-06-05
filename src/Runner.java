@@ -10,7 +10,7 @@ public class Runner
     {
         ArffFileStream arff_stream = new ArffFileStream(args[0], -1);
 
-        VOCL vocl = new VOCL();
+        VOCL vocl = new VOCL(VOCL.VagueLabelMethod.CLUSTER);
         vocl.labelStream(arff_stream, 29000, 0);
 
         // while (arff_stream.hasMoreInstances())

@@ -7,8 +7,16 @@ import com.yahoo.labs.samoa.instances.Instance;
 
 public class VOCL
 {
+    public enum VagueLabelMethod { RANDOM, CLUSTER };
+
+    private VagueLabelMethod label_method;
     private LocalWeighting local = new LocalWeighting();
     private GlobalWeighting global = new GlobalWeighting();
+    
+    public VOCL(VagueLabelMethod label_method)
+    {
+        this.label_method = label_method;
+    }
 
     /**
      * This is the main VOCL method. This will apply vague one-class learning on the input stream.
@@ -45,8 +53,33 @@ public class VOCL
     private void processChunk(Chunk chunk)
     {
         // Label positive instance groups
+        Instance[] PSi = null;
+        if (label_method == VagueLabelMethod.CLUSTER)
+        {
+            PSi = vagueLabelPositiveClusterGroups(chunk);
+        }
+        else if (label_method == VagueLabelMethod.RANDOM)
+        {
+            PSi = vagueLabelPositiveRandomGroups(chunk);
+        }
+        else
+        {
+            throw new IllegalArgumentException("Invalud VagueLabelType.");
+        }
 
         // Calculate local weights for each instance in chunk
         float[] local_weights = local.weigh(chunk, 0);
+    }
+
+    private Instance[] vagueLabelPositiveClusterGroups(Chunk chunk)
+    {
+        return null;
+
+    }
+
+    private Instance[] vagueLabelPositiveRandomGroups(Chunk chunk)
+    {
+        return null;
+
     }
 }
