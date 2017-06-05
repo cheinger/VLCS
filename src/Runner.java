@@ -13,8 +13,13 @@ public class Runner
         arff_loader.setFile(file_data);
 
         Instances data = arff_loader.getDataSet();
+
+        Chunk c = new Chunk(10);
+
         for(Instance inst : data){
+            System.out.println(c.addInstance(inst));
             System.out.println("Instance:" + inst);
+			System.out.println(inst.toString(0) + ", " + inst.toString(1));
         }
     }
 }
