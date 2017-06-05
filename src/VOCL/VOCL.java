@@ -1,6 +1,7 @@
 package VOCL;
 
 import weka.core.Instances;
+import weka.core.Instance;
 
 public class VOCL
 {
@@ -12,6 +13,26 @@ public class VOCL
      */
     public void labelStream(Instances stream, final int chunk_size, final int num_classifiers)
     {
+        Chunk chunk = new Chunk(chunk_size);
+        
+        for (Instance inst : stream)
+        {
+            // Accumulate until we can form a whole chunk
+            if (!chunk.addInstance(inst))
+            {
+                assert(chunk.size() == chunk_size);
 
+                
+
+                // Start new chunk (Si+1)
+                chunk = new Chunk(chunk_size);
+            }
+        }
+
+        // Partial chunk to process
+        if (chunk.size() != 0)
+        {
+
+        }
     }
 }

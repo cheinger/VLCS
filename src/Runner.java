@@ -1,5 +1,7 @@
 import java.io.File;
 import java.io.IOException;
+
+import VOCL.VOCL;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.converters.ArffLoader;
@@ -14,12 +16,14 @@ public class Runner
 
         Instances data = arff_loader.getDataSet();
 
-        Chunk c = new Chunk(10);
-
-        for(Instance inst : data){
-            System.out.println(c.addInstance(inst));
-            System.out.println("Instance:" + inst);
-			System.out.println(inst.toString(0) + ", " + inst.toString(1));
-        }
+        VOCL vocl = new VOCL();
+        vocl.labelStream(data, 29000, 0);
+//        Chunk c = new Chunk(10);
+//
+//        for(Instance inst : data){
+//            System.out.println(c.addInstance(inst));
+//            System.out.println("Instance:" + inst);
+//			System.out.println(inst.toString(0) + ", " + inst.toString(1));
+//        }
     }
 }

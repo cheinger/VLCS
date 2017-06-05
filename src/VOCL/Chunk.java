@@ -1,3 +1,5 @@
+package VOCL;
+
 import weka.core.Instance;
 
 public class Chunk
@@ -11,6 +13,10 @@ public class Chunk
         num_instances = 0;
     }
 
+    /**
+     * Adds instances into the chunk until its full where it will then return false.
+     * @param inst  The instance from the data stream
+     */
     public boolean addInstance(Instance inst)
     {
         if (num_instances != instances.length) {
@@ -19,5 +25,13 @@ public class Chunk
             return true;
         }
         return false;
+    }
+    
+    /**
+     * @return The current number of instances inside the chunk.
+     */
+    public int size()
+    {
+        return num_instances;
     }
 }
