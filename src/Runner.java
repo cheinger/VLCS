@@ -2,7 +2,6 @@ import java.io.File;
 import java.io.IOException;
 
 import VOCL.VOCL;
-import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.converters.ArffLoader;
 
@@ -18,8 +17,7 @@ public class Runner
 
         VOCL vocl = new VOCL();
         vocl.labelStream(data, 29000, 0);
-//        Chunk c = new Chunk(10);
-//
+
 //        for(Instance inst : data){
 //            System.out.println(c.addInstance(inst));
 //            System.out.println("Instance:" + inst);

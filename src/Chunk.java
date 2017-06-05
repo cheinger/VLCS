@@ -1,5 +1,3 @@
-package VOCL;
-
 import weka.core.Instance;
 
 public class Chunk
@@ -26,7 +24,7 @@ public class Chunk
         }
         return false;
     }
-    
+
     /**
      * @return The current number of instances inside the chunk.
      */
