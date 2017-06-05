@@ -1,3 +1,5 @@
+package VLCS;
+
 import weka.core.Instance;
 
 public class Chunk

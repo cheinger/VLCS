@@ -1,4 +1,4 @@
-package VOCL;
+package VLCS.VOCL;
 
 public class LocalWeighting {
 

@@ -1,4 +1,4 @@
-package OCCS;
+package VLCS.OCCS;
 
 public class DBSCAN {
 

@@ -1,7 +1,9 @@
 import java.io.File;
 import java.io.IOException;
 
-import VOCL.VOCL;
+import VLCS.VOCL.*;
+import VLCS.OCCS.*;
+
 import weka.core.Instances;
 import weka.core.converters.ArffLoader;
 

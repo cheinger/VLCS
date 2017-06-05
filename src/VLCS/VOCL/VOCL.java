@@ -1,5 +1,6 @@
-package VOCL;
+package VLCS.VOCL;
 
+import VLCS.Chunk;
 import weka.core.Instances;
 import weka.core.Instance;
 
