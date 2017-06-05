@@ -1,8 +1,9 @@
 package VLCS.VOCL;
 
 import VLCS.Chunk;
-import weka.core.Instances;
-import weka.core.Instance;
+
+import moa.streams.ArffFileStream;
+import com.yahoo.labs.samoa.instances.Instance;
 
 public class VOCL
 {
@@ -15,12 +16,13 @@ public class VOCL
      * @param chunk_size        The number of instances per chunk
      * @param num_classifiers   The number of classifiers forming the ensemble
      */
-    public void labelStream(Instances stream, final int chunk_size, final int num_classifiers)
+    public void labelStream(ArffFileStream stream, final int chunk_size, final int num_classifiers)
     {
         Chunk chunk = new Chunk(chunk_size);
 
-        for (Instance inst : stream)
+        while (stream.hasMoreInstances())
         {
+            Instance inst = stream.nextInstance().instance;
             // Accumulate until we can form a whole chunk
             if (!chunk.addInstance(inst))
             {

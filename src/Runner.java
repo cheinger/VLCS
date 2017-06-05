@@ -1,29 +1,28 @@
-import java.io.File;
-import java.io.IOException;
-
 import VLCS.VOCL.*;
 import VLCS.OCCS.*;
 
-import weka.core.Instances;
-import weka.core.converters.ArffLoader;
+import java.io.IOException;
+import moa.streams.ArffFileStream;
 
 public class Runner
 {
     public static void main(String[] args) throws IOException
     {
-        ArffLoader arff_loader = new ArffLoader();
-        File file_data = new File(args[0]);
-        arff_loader.setFile(file_data);
-
-        Instances data = arff_loader.getDataSet();
+        ArffFileStream arff_stream = new ArffFileStream(args[0], -1);
 
         VOCL vocl = new VOCL();
-        vocl.labelStream(data, 29000, 0);
+        vocl.labelStream(arff_stream, 29000, 0);
 
-//        for(Instance inst : data){
-//            System.out.println(c.addInstance(inst));
-//            System.out.println("Instance:" + inst);
-//			System.out.println(inst.toString(0) + ", " + inst.toString(1));
-//        }
+        // while (arff_stream.hasMoreInstances())
+        // {
+        //     InstanceExample inst = arff_stream.nextInstance();
+        //     System.out.println("Instance:" + inst.instance);
+        // }
+
+    //    for(Instance inst : data){
+    //        System.out.println(c.addInstance(inst));
+    //        System.out.println("Instance:" + inst);
+	// 		System.out.println(inst.toString(0) + ", " + inst.toString(1));
+    //    }
     }
 }
