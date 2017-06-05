@@ -1,28 +1,18 @@
 import VLCS.VOCL.*;
-import VLCS.OCCS.*;
 
 import java.io.IOException;
-import moa.streams.ArffFileStream;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import weka.core.converters.ArffLoader.ArffReader;
+
 
 public class Runner
 {
-    public static void main(String[] args) throws IOException
+    public static void main(String[] args) throws Exception
     {
-        ArffFileStream arff_stream = new ArffFileStream(args[0], -1);
-
+        BufferedReader br = new BufferedReader(new FileReader(args[0]));
+        ArffReader arff = new ArffReader(br);
         VOCL vocl = new VOCL(VOCL.VagueLabelMethod.CLUSTER);
-        vocl.labelStream(arff_stream, 29000, 0);
-
-        // while (arff_stream.hasMoreInstances())
-        // {
-        //     InstanceExample inst = arff_stream.nextInstance();
-        //     System.out.println("Instance:" + inst.instance);
-        // }
-
-    //    for(Instance inst : data){
-    //        System.out.println(c.addInstance(inst));
-    //        System.out.println("Instance:" + inst);
-	// 		System.out.println(inst.toString(0) + ", " + inst.toString(1));
-    //    }
+        vocl.labelStream(arff.getData(), 29000, 0);
     }
 }

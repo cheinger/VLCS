@@ -1,21 +1,25 @@
 package VLCS.VOCL;
 
-import VLCS.Chunk;
+import java.util.Random;
 
-import moa.streams.ArffFileStream;
-import com.yahoo.labs.samoa.instances.Instance;
+import weka.clusterers.SimpleKMeans;
+import weka.core.Instances;
 
 public class VOCL
 {
     public enum VagueLabelMethod { RANDOM, CLUSTER };
 
     private VagueLabelMethod label_method;
-    private LocalWeighting local = new LocalWeighting();
-    private GlobalWeighting global = new GlobalWeighting();
-    
-    public VOCL(VagueLabelMethod label_method)
+    private int positive_set_size;
+    private LocalWeighting local;
+    private GlobalWeighting global;
+
+    public VOCL(VagueLabelMethod label_method, int positive_set_size)
     {
         this.label_method = label_method;
+        this.positive_set_size = positive_set_size;
+        this.local = new LocalWeighting();
+        this.global = new GlobalWeighting();
     }
 
     /**
@@ -23,47 +27,37 @@ public class VOCL
      * @param stream            The stream of instances
      * @param chunk_size        The number of instances per chunk
      * @param num_classifiers   The number of classifiers forming the ensemble
+     * @throws Exception
      */
-    public void labelStream(ArffFileStream stream, final int chunk_size, final int num_classifiers)
+    public void labelStream(Instances data, final int chunk_size, final int num_classifiers) throws Exception
     {
-        Chunk chunk = new Chunk(chunk_size);
+        final int num_chunks = data.size() / chunk_size;
 
-        while (stream.hasMoreInstances())
+        // Batch process
+        for (int i = 0; i < num_chunks; ++i)
         {
-            Instance inst = stream.nextInstance().instance;
-            // Accumulate until we can form a whole chunk
-            if (!chunk.addInstance(inst))
-            {
-                assert(chunk.size() == chunk_size);
-
-                processChunk(chunk);
-
-                // Start new chunk (Si+1)
-                chunk = new Chunk(chunk_size);
-            }
-        }
-
-        // Partial chunk to process
-        if (chunk.size() != 0)
-        {
+            Instances chunk = new Instances(data, i * chunk_size, (i + 1) * chunk_size);
+            assert(chunk.size() == chunk_size);
             processChunk(chunk);
         }
+
+        // TODO Partial chunk to process
     }
 
-    private void processChunk(Chunk chunk)
+    /**
+     * Main Pseudo code method from paper (Figure 5.)
+     * @param chunk
+     * @throws Exception
+     */
+    private void processChunk(Instances chunk) throws Exception
     {
         // Label positive instance groups
-        Instance[] PSi = null;
-        if (label_method == VagueLabelMethod.CLUSTER)
-        {
+        Instances PSi;
+        if (label_method == VagueLabelMethod.CLUSTER) {
             PSi = vagueLabelPositiveClusterGroups(chunk);
-        }
-        else if (label_method == VagueLabelMethod.RANDOM)
-        {
+        } else if (label_method == VagueLabelMethod.RANDOM) {
             PSi = vagueLabelPositiveRandomGroups(chunk);
-        }
-        else
-        {
+        } else {
             throw new IllegalArgumentException("Invalud VagueLabelType.");
         }
 
@@ -71,15 +65,21 @@ public class VOCL
         float[] local_weights = local.weigh(chunk, 0);
     }
 
-    private Instance[] vagueLabelPositiveClusterGroups(Chunk chunk)
+    private Instances vagueLabelPositiveClusterGroups(Instances chunk) throws Exception
     {
+        SimpleKMeans kmeans = new SimpleKMeans();
+        kmeans.setPreserveInstancesOrder(true);
+        kmeans.setNumClusters(50); // Highest prediction accuracy reported in paper
+        kmeans.buildClusterer(chunk);
+        int[] cluster_ids = kmeans.getAssignments();
+        
+        // TODO sort clusters and data on purity (number of genuine positive samples in each cluster)
+        
         return null;
-
     }
 
-    private Instance[] vagueLabelPositiveRandomGroups(Chunk chunk)
+    private Instances vagueLabelPositiveRandomGroups(Instances chunk)
     {
         return null;
-
     }
 }
