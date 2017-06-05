@@ -4,9 +4,11 @@ import VLCS.Chunk;
 import weka.core.Instances;
 import weka.core.Instance;
 
-
 public class VOCL
 {
+    private LocalWeighting local = new LocalWeighting();
+    private GlobalWeighting global = new GlobalWeighting();
+
     /**
      * This is the main VOCL method. This will apply vague one-class learning on the input stream.
      * @param stream            The stream of instances
@@ -34,16 +36,15 @@ public class VOCL
         // Partial chunk to process
         if (chunk.size() != 0)
         {
+            processChunk(chunk);
         }
     }
 
     private void processChunk(Chunk chunk)
     {
-        labelPositiveInstanceGroups(chunk);
-    }
+        // Label positive instance groups
 
-    private void labelPositiveInstanceGroups(Chunk chunk)
-    {
-
+        // Calculate local weights for each instance in chunk
+        float[] local_weights = local.weigh(chunk, 0);
     }
 }

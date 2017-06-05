@@ -1,5 +1,11 @@
 package VLCS.OCCS;
 
-public class KMeans {
+import VLCS.Chunk;
 
+public class KMeans
+{
+    public void cluster(Chunk chunk)
+    {
+
+    }
 }
