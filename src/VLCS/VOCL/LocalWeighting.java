@@ -4,11 +4,14 @@ import weka.core.Instances;
 
 public class LocalWeighting
 {
-    /**
-     * @param chunk     The instances to individually weigh
-     * @param num_folds The number of times to fold for cross-validation
-     */
-    public float[] weigh(Instances chunk, final int num_folds)
+    private int num_folds;
+    
+    public LocalWeighting(int folds)
+    {
+        num_folds = folds;
+    }
+    
+    public float[] getWeights(Instances chunk, int[] labels)
     {
         float[] weights = new float[chunk.size()];
         return weights;
