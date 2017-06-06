@@ -11,7 +11,7 @@ public class VOCLRunner
         BufferedReader br = new BufferedReader(new FileReader(args[0]));
         ArffReader arff = new ArffReader(br);
         final int positive_set_size = Integer.parseInt(args[1]);
-        final int chunk_size = 40;
+        final int chunk_size = 72; //172
         VOCL vocl = new VOCL(VOCL.VagueLabelMethod.CLUSTER, positive_set_size);
         vocl.labelStream(arff.getData(), chunk_size, positive_set_size);
     }

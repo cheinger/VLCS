@@ -66,7 +66,8 @@ public class VOCL
      */
     private void processChunk(Instances chunk) throws Exception
     {
-        int[] labels = clusterVagueLabel(chunk);
+        int[] labels = new int[chunk.size()];
+//        int[] labels = clusterVagueLabel(chunk);
         float[] loc_weights = local.getWeights(chunk, labels);
     }
 
