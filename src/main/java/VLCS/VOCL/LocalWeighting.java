@@ -23,38 +23,40 @@ public class LocalWeighting
 
         assert chunk.size() % folds == 0 : "chunk size has to be multiple of num folds.";
         assert labels.length == chunk.size() : "number of labels does not match chunk size.";
-        assert chunk.size() / folds > 0 : "Must be able to fold at least once.";
 
-        System.out.println("chunk suze: " + chunk.size());
-//        for (int i = 0; i < folds; i++)
+        for (int i = 0; i < folds; i++)
         {
-            Instances training_set = new Instances(chunk);//chunk.trainCV(folds, 0);
+            Instances training_set = chunk.trainCV(folds, i);
+            Instances testing_set = chunk.testCV(folds, i);
+
+            // Tell the sets which index indicates the class
             training_set.setClassIndex(training_set.numAttributes() - 1);
-//            Instances testing_set = chunk.testCV(folds, i);
+            testing_set.setClassIndex(testing_set.numAttributes() - 1);
+
+            System.out.println("folds: " + folds + ", chunk_size: " + training_set.size());
+
             Remove filter = new Remove();
             filter.setAttributeIndices("2"); // attr0, attr1, class (attr0 = index 2 NOT 0!)
             filter.setInputFormat(training_set);
-            Instances newTrainData = Filter.useFilter(training_set, filter);
-            newTrainData.setClassIndex(newTrainData.numAttributes() - 1);
+            Instances new_training_set = Filter.useFilter(training_set, filter);
+            new_training_set.setClassIndex(new_training_set.numAttributes() - 1);
 
-            for (Instance instance : newTrainData) {
-                System.out.println(instance);
-            }
-//
             OneClassClassifier occ = new OneClassClassifier();
-//            occ.setTargetClassLabel("{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23}");
-            occ.setTargetClassLabel("23");
-            occ.buildClassifier(newTrainData);
+            occ.setTargetClassLabel("13");
+            occ.buildClassifier(new_training_set);
 
-//            for (int j = 0; j < newTrainData.size(); j++)
-//            {
-//                System.out.println("newTrainData Instance: " + newTrainData.instance(j));
-//            }
+            Remove filter2 = new Remove();
+            filter2.setAttributeIndices("2"); // attr0, attr1, class (attr0 = index 2 NOT 0!)
+            filter2.setInputFormat(testing_set);
+            Instances new_testing_set = Filter.useFilter(testing_set, filter2);
+            new_testing_set.setClassIndex(new_testing_set.numAttributes() - 1);
 
-//            for (Instance instance : newTrainData)
+            for (Instance instance : new_testing_set)
             {
-//                double pred = occ.classifyInstance(instance);
-//                System.out.println("pred: " + pred);
+                double pred = occ.classifyInstance(instance);
+                System.out.println("instance: " + instance + "\tpred: " + pred);
+//                String className = new_training_set.attribute(new_testing_set.numAttributes() - 1).value((int)pred);
+//                System.out.println("pred: " + pred + ", className: " + className);
             }
 
         }

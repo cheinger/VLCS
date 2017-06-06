@@ -27,7 +27,7 @@ public class VOCL
     {
         this.label_method = label_method;
         this.positive_set_size = positive_set_size;
-        this.local = new LocalWeighting(10); // Specify number of folds
+        this.local = new LocalWeighting(4); // Specify number of folds
         this.global = new GlobalWeighting();
     }
 
