@@ -33,18 +33,14 @@ public class LocalWeighting {
         assert chunk.size() % folds == 0 : "chunk size has to be multiple of num folds.";
         assert labels.length == chunk.size() : "number of labels does not match chunk size.";
 
-        // TODO Not sure whether we need a 'chunk_classifier'
-        OneClassClassifier chunk_classifier = new OneClassClassifier();
-        chunk_classifier.setTargetClassLabel(Integer.toString(class_idx));
-
-        OneClassClassifier[] fold_classifiers = new OneClassClassifier[folds];
+        OneClassClassifier[] classifiers = new OneClassClassifier[folds];
 
         float[] weights = new float[chunk.size()];
 
         for (int i = 0; i < folds; i++) {
-            fold_classifiers[i] = new OneClassClassifier();
+            classifiers[i] = new OneClassClassifier();
             // Specify attribute interest
-            fold_classifiers[i].setTargetClassLabel(Integer.toString(class_idx));
+            classifiers[i].setTargetClassLabel(Integer.toString(class_idx));
 
             Instances training_set = chunk.trainCV(folds, i);
             Instances testing_set = chunk.testCV(folds, i);
@@ -53,7 +49,7 @@ public class LocalWeighting {
             training_set.setClassIndex(training_set.numAttributes() - 1);
             testing_set.setClassIndex(testing_set.numAttributes() - 1);
 
-            System.out.println("folds: " + folds + ", chunk_size: " + training_set.size());
+            System.out.println("folds: " + folds + ", chunk_size: " + testing_set.size());
 
             Instances new_training_set = filterByAttribute(training_set, attribute_idx);
             Instances new_testing_set = filterByAttribute(testing_set, attribute_idx);
@@ -62,12 +58,11 @@ public class LocalWeighting {
             assert new_testing_set.size() == testing_set.size() : "filtering changed the size of the set.";
 
             // Train the one-class classifiers to the specified class-idx with the training data
-            fold_classifiers[i].buildClassifier(new_training_set);
-            chunk_classifier.buildClassifier(new_training_set);
+            classifiers[i].buildClassifier(new_training_set);
 
-            for (int p = 0; p < new_testing_set.size(); p++) {
-                Instance instance = new_testing_set.instance(p);
-                double index = chunk_classifier.classifyInstance(instance);
+            for (int p = i * new_testing_set.size(); p < (i + 1 ) * new_testing_set.size(); p++) {
+                Instance instance = new_testing_set.instance(p - (i * new_testing_set.size()));
+                double index = classifiers[i].classifyInstance(instance);
                 // Update for positive samples
                 if (labels[p] == 1) {
                     // If Classifies p as positive then set weight to 1.0 else 0.5;
@@ -78,12 +73,12 @@ public class LocalWeighting {
                     // Predict unlabelled instance using all <= i OneClassClassifiers to calculate weight
                     float weight = 0.f;
                     for (int f = 0; f < i; f++) {
-                        double sub_index = fold_classifiers[f].classifyInstance(instance);
+                        double sub_index = classifiers[f].classifyInstance(instance);
                         // Increase weight if positive
                         weight += ((int) sub_index == class_idx) ? 1.0f : 0.0f;
                     }
                     weights[p] = (weight / folds) + 1;
-//                    System.out.println("unlabelled -> instance: " + instance + "\taverge index: " + weights[p]);
+                    System.out.println("unlabelled -> instance: " + instance + "\taverge index: " + weights[p]);
                 }
             }
 
