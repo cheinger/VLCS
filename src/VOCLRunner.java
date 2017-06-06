@@ -4,7 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import weka.core.converters.ArffLoader.ArffReader;
 
-public class Runner
+public class VOCLRunner
 {
     public static void main(String[] args) throws Exception
     {
