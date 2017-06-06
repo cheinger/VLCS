@@ -11,8 +11,9 @@ public class Runner
     public static void main(String[] args) throws Exception
     {
         BufferedReader br = new BufferedReader(new FileReader(args[0]));
+        int positive_set_size = Integer.parseInt(args[1]);
         ArffReader arff = new ArffReader(br);
-        VOCL vocl = new VOCL(VOCL.VagueLabelMethod.CLUSTER);
-        vocl.labelStream(arff.getData(), 29000, 0);
+        VOCL vocl = new VOCL(VOCL.VagueLabelMethod.CLUSTER, positive_set_size);
+        vocl.labelStream(arff.getData(), 29928, 0);
     }
 }

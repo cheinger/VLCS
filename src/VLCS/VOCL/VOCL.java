@@ -1,8 +1,17 @@
 package VLCS.VOCL;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
 
 import weka.clusterers.SimpleKMeans;
+import weka.core.Instance;
 import weka.core.Instances;
 
 public class VOCL
@@ -10,6 +19,8 @@ public class VOCL
     public enum VagueLabelMethod { RANDOM, CLUSTER };
 
     private VagueLabelMethod label_method;
+    private final int num_clusters = 20;
+    private int[] cluster_sizes = new int[num_clusters];
     private int positive_set_size;
     private LocalWeighting local;
     private GlobalWeighting global;
@@ -69,11 +80,31 @@ public class VOCL
     {
         SimpleKMeans kmeans = new SimpleKMeans();
         kmeans.setPreserveInstancesOrder(true);
-        kmeans.setNumClusters(50); // Highest prediction accuracy reported in paper
+        kmeans.setNumClusters(num_clusters); // Highest prediction accuracy reported in paper
         kmeans.buildClusterer(chunk);
         int[] cluster_ids = kmeans.getAssignments();
         
-        // TODO sort clusters and data on purity (number of genuine positive samples in each cluster)
+        TreeMap<Float, Integer> cluster_purity_size = new TreeMap<Float, Integer>(Collections.reverseOrder());
+
+    
+        // Calculate cluster_sizes
+        for (int i = 0; i < cluster_ids.length; ++i) {
+            cluster_sizes[cluster_ids[i]]++;
+        }
+        
+        // Sort clusters on purity (number of genuine positive samples in each cluster)
+        for (int i = 0; i < num_clusters; ++i) {
+            cluster_purity_size.put((float)positive_set_size / cluster_sizes[i], cluster_sizes[i]);
+        }
+        
+        for (Map.Entry<Float, Integer> e : cluster_purity_size.entrySet()) {
+            System.out.println(e.getKey() + " " + e.getValue());
+        }
+        
+        // Reset cluster_sizes for next chunk
+        for (int i = 0; i < num_clusters; i++) {
+            cluster_sizes[i] = 0;
+        }
         
         return null;
     }
