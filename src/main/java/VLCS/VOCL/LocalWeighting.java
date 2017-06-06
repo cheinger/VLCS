@@ -6,10 +6,10 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.Remove;
-import weka.gui.beans.CrossValidationFoldMaker;
 
 public class LocalWeighting
 {
+    private Remove filter = new Remove();
     private int folds;
 
     public LocalWeighting(int folds) {
@@ -19,7 +19,7 @@ public class LocalWeighting
         this.folds = folds;
     }
     
-    public float[] getWeights(Instances chunk, int[] labels) throws Exception {
+    public float[] getWeights(Instances chunk, int[] labels, int attribute_idx, int class_idx) throws Exception {
 
         assert chunk.size() % folds == 0 : "chunk size has to be multiple of num folds.";
         assert labels.length == chunk.size() : "number of labels does not match chunk size.";
@@ -35,21 +35,16 @@ public class LocalWeighting
 
             System.out.println("folds: " + folds + ", chunk_size: " + training_set.size());
 
-            Remove filter = new Remove();
-            filter.setAttributeIndices("2"); // attr0, attr1, class (attr0 = index 2 NOT 0!)
-            filter.setInputFormat(training_set);
-            Instances new_training_set = Filter.useFilter(training_set, filter);
-            new_training_set.setClassIndex(new_training_set.numAttributes() - 1);
+            Instances new_training_set = filterByAttribute(training_set, attribute_idx);
+            Instances new_testing_set = filterByAttribute(testing_set, attribute_idx);
 
+            assert new_training_set.size() == new_training_set.size() : "filtering changed the size of the set.";
+            assert new_testing_set.size() == testing_set.size() : "filtering changed the size of the set.";
+
+            // Train the one-class classifier to the specified class-idx with the training data
             OneClassClassifier occ = new OneClassClassifier();
-            occ.setTargetClassLabel("13");
+            occ.setTargetClassLabel(Integer.toString(class_idx));
             occ.buildClassifier(new_training_set);
-
-            Remove filter2 = new Remove();
-            filter2.setAttributeIndices("2"); // attr0, attr1, class (attr0 = index 2 NOT 0!)
-            filter2.setInputFormat(testing_set);
-            Instances new_testing_set = Filter.useFilter(testing_set, filter2);
-            new_testing_set.setClassIndex(new_testing_set.numAttributes() - 1);
 
             for (Instance instance : new_testing_set)
             {
@@ -63,5 +58,20 @@ public class LocalWeighting
 
         float[] weights = new float[chunk.size()];
         return weights;
+    }
+
+    /**
+     * Filters out unwanted attributes from each instance.
+     * @param data
+     * @param attribute_idx
+     * @return
+     * @throws Exception
+     */
+    private Instances filterByAttribute(Instances data, int attribute_idx) throws Exception {
+        filter.setAttributeIndices(Integer.toString(attribute_idx)); // attr0, attr1, class (attr0 = index 2 NOT 0!)
+        filter.setInputFormat(data);
+        Instances new_data = Filter.useFilter(data, filter);
+        new_data.setClassIndex(new_data.numAttributes() - 1);
+        return new_data;
     }
 }
