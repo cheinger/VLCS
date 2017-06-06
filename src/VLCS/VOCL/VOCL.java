@@ -1,13 +1,7 @@
 package VLCS.VOCL;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.TreeMap;
 
 import weka.clusterers.SimpleKMeans;
@@ -40,19 +34,23 @@ public class VOCL
      * @param num_classifiers   The number of classifiers forming the ensemble
      * @throws Exception
      */
-    public void labelStream(Instances data, final int chunk_size, final int num_classifiers) throws Exception
+    public void labelStream(Instances stream, final int chunk_size, final int num_classifiers) throws Exception
     {
-        final int num_chunks = data.size() / chunk_size;
-
-        // Batch process
-        for (int i = 0; i < num_chunks; ++i)
-        {
-            Instances chunk = new Instances(data, i * chunk_size, (i + 1) * chunk_size);
-            assert(chunk.size() == chunk_size);
-            processChunk(chunk);
-        }
-
-        // TODO Partial chunk to process
+         Instances chunk = new Instances(stream);
+         chunk.clear();
+         
+         for (Instance instance : stream)
+         {
+             chunk.add(instance);
+             if (chunk.size() == chunk_size)
+             {
+                 processChunk(chunk);
+                 chunk.clear();
+             }
+         }
+         
+         // Process partial chunk
+         // processChunk(chunk);
     }
 
     /**
@@ -84,9 +82,8 @@ public class VOCL
         kmeans.buildClusterer(chunk);
         int[] cluster_ids = kmeans.getAssignments();
         
-        TreeMap<Float, Integer> cluster_purity_size = new TreeMap<Float, Integer>(Collections.reverseOrder());
+        TreeMap<Float, Integer> cluster_purity_id = new TreeMap<Float, Integer>(Collections.reverseOrder());
 
-    
         // Calculate cluster_sizes
         for (int i = 0; i < cluster_ids.length; ++i) {
             cluster_sizes[cluster_ids[i]]++;
@@ -94,12 +91,26 @@ public class VOCL
         
         // Sort clusters on purity (number of genuine positive samples in each cluster)
         for (int i = 0; i < num_clusters; ++i) {
-            cluster_purity_size.put((float)positive_set_size / cluster_sizes[i], cluster_sizes[i]);
+            cluster_purity_id.put((float)positive_set_size / cluster_sizes[cluster_ids[i]], cluster_ids[i]);
         }
         
-        for (Map.Entry<Float, Integer> e : cluster_purity_size.entrySet()) {
-            System.out.println(e.getKey() + " " + e.getValue());
+        int[] cluster_pos_num_labels = new int[num_clusters];
+        int total_pos_labels = 0;
+        int itr = 0;
+        for (Map.Entry<Float, Integer> e : cluster_purity_id.entrySet()) {
+            final int cluster_size = cluster_sizes[e.getValue()];
+            final int num_pos = total_pos_labels + cluster_size <= positive_set_size ?
+                                cluster_size : 
+                                positive_set_size - total_pos_labels;
+            cluster_pos_num_labels[itr++] = num_pos;
+            total_pos_labels += num_pos;
         }
+
+        for (int i = 0; i <num_clusters; i++ ) {
+            System.out.println(i + " " + cluster_pos_num_labels[i]);
+        }
+
+        
         
         // Reset cluster_sizes for next chunk
         for (int i = 0; i < num_clusters; i++) {
