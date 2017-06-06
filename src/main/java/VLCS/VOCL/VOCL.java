@@ -66,8 +66,7 @@ public class VOCL
      */
     private void processChunk(Instances chunk) throws Exception
     {
-        int[] labels = new int[chunk.size()];
-//        int[] labels = clusterVagueLabel(chunk);
+        int[] labels = clusterVagueLabel(chunk);
         float[] loc_weights = local.getWeights(chunk, labels, 2, 13);
     }
 
@@ -113,7 +112,7 @@ public class VOCL
         
         for (Entry<Float, Integer> e : sorted_clusters)
         {
-            System.out.println(e.getKey() + " " + e.getValue() + " size: " + cluster_sizes[e.getValue()]);
+//            System.out.println(e.getKey() + " " + e.getValue() + " size: " + cluster_sizes[e.getValue()]);
             final int cluster_size = cluster_sizes[e.getValue()];
             final int num_pos = total_pos_labels + cluster_size <= positive_set_size ?
                                 cluster_size :
@@ -124,8 +123,8 @@ public class VOCL
         
         assert total_pos_labels == positive_set_size : "Counted positive labels incorrect.";
         
-        for (int i =0; i < num_clusters; i++)
-            System.out.println("pos count: " + num_pos_labels_per_clust[i]);
+//        for (int i =0; i < num_clusters; i++)
+//            System.out.println("pos count: " + num_pos_labels_per_clust[i]);
 
         // Generate positive labels
         int[] labels = new int[chunk.size()];
@@ -138,10 +137,10 @@ public class VOCL
             }
         }
         
-        for (int i = 0; i < chunk.size(); i++)
-        {
-            System.out.println("cluster_id: " + cluster_ids[i] + ", pos: " + labels[i]);
-        }
+//        for (int i = 0; i < chunk.size(); i++)
+//        {
+//            System.out.println("cluster_id: " + cluster_ids[i] + ", pos: " + labels[i]);
+//        }
 
         // Reset for next chunk
         Arrays.fill(cluster_sizes, 0);
