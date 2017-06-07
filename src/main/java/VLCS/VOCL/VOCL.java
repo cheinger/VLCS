@@ -22,7 +22,7 @@ public class VOCL {
     private LocalWeighting local;
     private GlobalWeighting global;
     private int[] cluster_sizes = new int[num_clusters];
-    private Queue<OneClassClassifier> classifiers = new ArrayDeque<>();
+    private Queue<OneClassClassifier> classifiers = new LinkedList<>();
     private static Remove filter = new Remove();
 
     public VOCL(VagueLabelMethod label_method, int positive_set_size) {
@@ -69,11 +69,16 @@ public class VOCL {
     private void processChunk(Instances chunk) throws Exception {
 
         int[] PSi = clusterVagueLabel(chunk);
-        float[] WLx = local.getWeights(chunk, PSi, attr_idx, class_idx);
-        float[] WGx = global.getWeights(chunk, classifiers);
+
+        // Create copy: Filter chunk by attribute & specify chunk class index
+        Instances attr_chunk = filterByAttribute(chunk, attr_idx);
+        attr_chunk.setClassIndex(attr_chunk.numAttributes() - 1);
+
+        float[] WLx = local.getWeights(attr_chunk, PSi, attr_idx, class_idx);
+        float[] WGx = global.getWeights(attr_chunk, classifiers);
 
         float[] Wx = calculateUnifiedWeights(WLx, WGx);
-        trainNewClassifier(chunk, Wx);
+        trainNewClassifier(attr_chunk, Wx);
     }
 
     private float[] calculateUnifiedWeights(float[] WLx, float[] WGx) {
@@ -118,12 +123,6 @@ public class VOCL {
             instance.setWeight(unified_weights[i]);
             new_chunk.set(i, instance);
         }
-
-        // Tell the chunk which index it's class is on
-        new_chunk.setClassIndex(new_chunk.numAttributes() - 1);
-
-        // Filter out unwanted attributes
-        new_chunk = filterByAttribute(new_chunk, attr_idx);
 
         // Train classifier with new weighted chunk
         new_classifier.buildClassifier(new_chunk);

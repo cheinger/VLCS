@@ -48,23 +48,11 @@ public class LocalWeighting {
             Instances training_set = chunk.trainCV(folds, i);
             Instances testing_set = chunk.testCV(folds, i);
 
-            // Tell the sets which index indicates the class
-            training_set.setClassIndex(training_set.numAttributes() - 1);
-            testing_set.setClassIndex(testing_set.numAttributes() - 1);
-
-            System.out.println("folds: " + folds + ", chunk_size: " + testing_set.size());
-
-            Instances new_training_set = VOCL.filterByAttribute(training_set, attribute_idx);
-            Instances new_testing_set = VOCL.filterByAttribute(testing_set, attribute_idx);
-
-            assert new_training_set.size() == new_training_set.size() : "filtering changed the size of the set.";
-            assert new_testing_set.size() == testing_set.size() : "filtering changed the size of the set.";
-
             // Train the one-class classifiers to the specified class-idx with the training data
-            classifiers[i].buildClassifier(new_training_set);
+            classifiers[i].buildClassifier(training_set);
 
-            for (int p = i * new_testing_set.size(); p < (i + 1) * new_testing_set.size(); p++) {
-                Instance instance = new_testing_set.instance(p - (i * new_testing_set.size()));
+            for (int p = i * testing_set.size(); p < (i + 1) * testing_set.size(); p++) {
+                Instance instance = testing_set.instance(p - (i * testing_set.size()));
                 double index = classifiers[i].classifyInstance(instance);
                 // Update for positive samples
                 if (labels[p] == 1) {
