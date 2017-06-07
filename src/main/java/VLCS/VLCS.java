@@ -4,6 +4,7 @@ import VLCS.OCCS.OCCS;
 import VLCS.VOCL.VOCL;
 import weka.core.converters.ArffLoader.ArffReader;
 import weka.classifiers.meta.OneClassClassifier;
+
 /*
  *  In order to address the vague one-class learning and concept summarization challenges, we propose a VLCS system with
  *  two major modules. Given a data stream with samples arriving in a chunk-by-chunk manner, VLCS
@@ -13,11 +14,12 @@ import weka.classifiers.meta.OneClassClassifier;
 public class VLCS {
     ArffReader arff;
 
-    public VLCS(ArffReader arff_){
+    public VLCS(ArffReader arff_) {
         arff = arff_;
     }
-    public void run(){
-        VOCL vocl = new VOCL(VOCL.VagueLabelMethod.CLUSTER, 1);
+
+    public void run() {
+        VOCL vocl = new VOCL(VOCL.VagueLabelMethod.CLUSTER);
         OCCS occs = new OCCS();
 
     }
