@@ -73,7 +73,7 @@ public class VOCL {
         float[] WGx = global.getWeights(chunk, classifiers);
 
         float[] Wx = calculateUnifiedWeights(WLx, WGx);
-//        trainNewClassifier(chunk, Wx);
+        trainNewClassifier(chunk, Wx);
     }
 
     private float[] calculateUnifiedWeights(float[] WLx, float[] WGx) {
@@ -106,25 +106,27 @@ public class VOCL {
      */
     private void trainNewClassifier(Instances chunk, float[] unified_weights) throws Exception {
 
+        Instances new_chunk = new Instances(chunk);
+
         // Create new classifier to train
         OneClassClassifier new_classifier = new OneClassClassifier();
         new_classifier.setTargetClassLabel(Integer.toString(class_idx));
 
         // Update chunk with new weights
-        for (int i = 0; i < chunk.size(); i++) {
-            Instance instance = chunk.instance(i);
+        for (int i = 0; i < new_chunk.size(); i++) {
+            Instance instance = new_chunk.instance(i);
             instance.setWeight(unified_weights[i]);
-            chunk.set(i, instance);
+            new_chunk.set(i, instance);
         }
 
         // Tell the chunk which index it's class is on
-        chunk.setClassIndex(chunk.numAttributes() - 1);
+        new_chunk.setClassIndex(new_chunk.numAttributes() - 1);
 
         // Filter out unwanted attributes
-        chunk = filterByAttribute(chunk, attr_idx);
+        new_chunk = filterByAttribute(new_chunk, attr_idx);
 
         // Train classifier with new weighted chunk
-        new_classifier.buildClassifier(chunk);
+        new_classifier.buildClassifier(new_chunk);
 
         // VOCL module contains the k most recent classifiers
         if (classifiers.size() == k) {
