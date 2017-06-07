@@ -3,7 +3,7 @@ package VLCS;
 import VLCS.OCCS.OCCS;
 import VLCS.VOCL.VOCL;
 import weka.core.converters.ArffLoader.ArffReader;
-import moa.clusterers.kmeanspm.ClusteringFeature;
+import weka.classifiers.meta.OneClassClassifier;
 /*
  *  In order to address the vague one-class learning and concept summarization challenges, we propose a VLCS system with
  *  two major modules. Given a data stream with samples arriving in a chunk-by-chunk manner, VLCS
