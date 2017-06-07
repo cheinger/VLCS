@@ -57,7 +57,7 @@ public class VOCL {
         }
 
         // Process partial chunk
-        processChunk(chunk);
+//        processChunk(chunk);
     }
 
     /**
