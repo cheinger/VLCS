@@ -13,11 +13,12 @@ import weka.core.converters.ArffLoader.ArffReader;
 public class VLCS {
     ArffReader arff;
 
-    public VLCS(ArffReader arff_){
+    public VLCS(ArffReader arff_) {
         arff = arff_;
     }
-    public void run(){
-        VOCL vocl = new VOCL(VOCL.VagueLabelMethod.CLUSTER, 1);
+
+    public void run() {
+        VOCL vocl = new VOCL(VOCL.VagueLabelMethod.CLUSTER);
         OCCS occs = new OCCS();
 
     }
