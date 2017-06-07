@@ -97,14 +97,7 @@ public class VOCL
         }
         
         // Sort clusters on purity (number of genuine positive samples in each cluster)
-        Collections.sort(sorted_clusters, new Comparator<Entry<Float, Integer>>()
-            {
-                @Override
-                public int compare(Entry<Float, Integer> o1, Entry<Float, Integer> o2)
-                {
-                    return Float.compare(o2.getKey(), o1.getKey());
-                }
-            }
+        Collections.sort(sorted_clusters, (o1, o2) -> Float.compare(o2.getKey(), o1.getKey())
         );
         
         int[] num_pos_labels_per_clust = new int[num_clusters];

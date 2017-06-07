@@ -1,5 +1,6 @@
 package VLCS.OCCS;
 
+import weka.clusterers.AbstractClusterer;
 import weka.core.Instances;
 
 public class OCCS {
@@ -9,9 +10,11 @@ public class OCCS {
     }
 
     public void run(Instances chunks) {
-        Clustering clustering = new Clustering();
+        ClusterStep clusterStep = new ClusterStep();
+        ConceptClusterMap conceptClusterMap = new ConceptClusterMap();
         try {
-            clustering.run(chunks);
+            AbstractClusterer clustering = clusterStep.run(chunks);
+            conceptClusterMap.run(chunks,clustering);
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
