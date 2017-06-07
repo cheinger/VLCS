@@ -99,7 +99,7 @@ public class VOCL {
         float[] Wx = new float[WLx.length];
 
         for (int i = 0; i < Wx.length; i++) {
-            if (WLx[i] + WGx[i] > 0 ) {
+            if (WLx[i] + WGx[i] > 0) {
                 Wx[i] = (WLx[i] + WGx[i] + a) / (Math.abs(WLx[i] - WGx[i]) + b);
                 assert Wx[i] >= 1 && Wx[i] <= 5 : "Unified weight expected to be between 1-5.";
             } else {

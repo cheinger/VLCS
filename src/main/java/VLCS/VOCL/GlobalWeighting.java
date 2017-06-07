@@ -21,7 +21,7 @@ public class GlobalWeighting {
 
             for (OneClassClassifier classifier : classifiers) {
                 double index = classifier.classifyInstance(instance);
-                if ((int)index == Integer.parseInt(classifier.getTargetClassLabel())) {
+                if ((int) index == Integer.parseInt(classifier.getTargetClassLabel())) {
                     percent_predicted_positive += 1.0f;
                 }
             }
