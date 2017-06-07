@@ -3,7 +3,9 @@ package VLCS.VOCL;
 import java.util.*;
 import java.util.Map.Entry;
 
+import meka.classifiers.multilabel.meta.EnsembleML;
 import meka.classifiers.multitarget.meta.EnsembleMT;
+import moa.classifiers.meta.AccuracyWeightedEnsemble;
 import weka.classifiers.meta.OneClassClassifier;
 import weka.clusterers.SimpleKMeans;
 import weka.core.Instance;
@@ -24,7 +26,6 @@ public class VOCL {
 
     private LocalWeighting local;
     private GlobalWeighting global;
-    private int[] cluster_sizes = new int[num_clusters];
     private Queue<OneClassClassifier> classifiers = new LinkedList<>();
     private static Remove filter = new Remove();
 
@@ -83,6 +84,8 @@ public class VOCL {
         // TODO weight classifiers
         if (classifiers.size() > 0) {
             float[] Gl = weightClassifiers(Li, Wx, attr_chunk, PSi);
+            OneClassClassifierEnsemble ensemble = new OneClassClassifierEnsemble();
+            ensemble.addClassifier(Li, Gl[classifiers.size() - 1]);
         }
         // TODO form weighted classifier ensemble
 
