@@ -7,6 +7,9 @@ import weka.core.Instances;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.Remove;
 
+import java.util.Arrays;
+import java.util.Collections;
+
 public class LocalWeighting {
     private Remove filter = new Remove();
     private int folds;
@@ -36,6 +39,7 @@ public class LocalWeighting {
         OneClassClassifier[] classifiers = new OneClassClassifier[folds];
 
         float[] weights = new float[chunk.size()];
+        float min = 0.f, max = 2.f;
 
         for (int i = 0; i < folds; i++) {
             classifiers[i] = new OneClassClassifier();
@@ -60,7 +64,7 @@ public class LocalWeighting {
             // Train the one-class classifiers to the specified class-idx with the training data
             classifiers[i].buildClassifier(new_training_set);
 
-            for (int p = i * new_testing_set.size(); p < (i + 1 ) * new_testing_set.size(); p++) {
+            for (int p = i * new_testing_set.size(); p < (i + 1) * new_testing_set.size(); p++) {
                 Instance instance = new_testing_set.instance(p - (i * new_testing_set.size()));
                 double index = classifiers[i].classifyInstance(instance);
                 // Update for positive samples
@@ -78,19 +82,14 @@ public class LocalWeighting {
                         weight += ((int) sub_index == class_idx) ? 1.0f : 0.0f;
                     }
                     weights[p] = (weight / folds) + 1;
-                    System.out.println("unlabelled -> instance: " + instance + "\taverge index: " + weights[p]);
+                    // Normalize weight values to 0-1 for unlabelled set (USi)
+                    weights[p] = (weights[p] - min) / (max - min);
+                    assert weights[p] >= 0 && weights[p] <= 1 : "normalized weight must be between 0-1.";
+
+                    System.out.println("unlabelled -> old: " + ((weight / folds) + 1) + "\taverge index: " + weights[p]);
                 }
             }
 
-        }
-
-        // Normalize weight values to 0-1 for unlabelled set (USi)
-        for (int p = 0; p < weights.length; p++) {
-            if (labels[p] == 0) {
-//                float normalized = (x-min(x))/(max(x)-min(x));
-//              weights[p] = (x-min(x))/(max(x)-min(x));
-//                System.out.println("normalize: " + weights[p]);
-            }
         }
 
         return weights;
