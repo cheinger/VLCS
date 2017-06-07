@@ -21,7 +21,6 @@ public class VOCL {
 
     private LocalWeighting local;
     private GlobalWeighting global;
-    private int[] cluster_sizes = new int[num_clusters];
     private Queue<OneClassClassifier> classifiers = new LinkedList<>();
     private static Remove filter = new Remove();
 
@@ -80,6 +79,8 @@ public class VOCL {
         // TODO weight classifiers
         if (classifiers.size() > 0) {
             float[] Gl = weightClassifiers(Li, Wx, attr_chunk, PSi);
+            OneClassClassifierEnsemble ensemble = new OneClassClassifierEnsemble();
+            ensemble.addClassifier(Li, Gl[classifiers.size() - 1]);
         }
         // TODO form weighted classifier ensemble
 
