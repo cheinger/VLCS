@@ -1,32 +1,37 @@
 package VLCS.VOCL;
 
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
 
+import weka.classifiers.meta.OneClassClassifier;
 import weka.clusterers.SimpleKMeans;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.Remove;
 
 public class VOCL {
     public enum VagueLabelMethod {RANDOM, CLUSTER}
 
     private VagueLabelMethod label_method;
     private final int num_clusters = 20;
-    private int[] cluster_sizes = new int[num_clusters];
     private int positive_set_size;
+    private int k = 10;
+    private int class_idx;
+    private int attr_idx;
     private LocalWeighting local;
     private GlobalWeighting global;
+    private int[] cluster_sizes = new int[num_clusters];
+    private Queue<OneClassClassifier> classifiers = new ArrayDeque<>();
+    private static Remove filter = new Remove();
 
     public VOCL(VagueLabelMethod label_method, int positive_set_size) {
         this.label_method = label_method;
         this.positive_set_size = positive_set_size;
         this.local = new LocalWeighting(4); // Specify number of folds
         this.global = new GlobalWeighting();
+        this.class_idx = 13; // FIXME
+        this.attr_idx = 2; // FIXME
     }
 
     /**
@@ -62,9 +67,73 @@ public class VOCL {
      * @throws Exception
      */
     private void processChunk(Instances chunk) throws Exception {
+
         int[] PSi = clusterVagueLabel(chunk);
-        float[] WLx = local.getWeights(chunk, PSi, 2, 13);
-        float[] WGx = global.getWeights(chunk);
+        float[] WLx = local.getWeights(chunk, PSi, attr_idx, class_idx);
+        float[] WGx = global.getWeights(chunk, classifiers);
+
+        float[] Wx = calculateUnifiedWeights(WLx, WGx);
+//        trainNewClassifier(chunk, Wx);
+    }
+
+    private float[] calculateUnifiedWeights(float[] WLx, float[] WGx) {
+
+        assert WLx.length == WGx.length : "Weights have different lengths.";
+
+        // Laplace smoothing parameters
+        float a = 0.5f, b = 0.5f;
+
+        float[] Wx = new float[WLx.length];
+
+        for (int i = 0; i < Wx.length; i++) {
+            if (WLx[i] + WGx[i] > 0 ) {
+                Wx[i] = (WLx[i] + WGx[i] + a) / (Math.abs(WLx[i] - WGx[i]) + b);
+                assert Wx[i] >= 1 && Wx[i] <= 5 : "Unified weight expected to be between 1-5.";
+            } else {
+                Wx[i] = 0.f;
+            }
+        }
+
+        return Wx;
+    }
+
+    /**
+     * Trains a new classifier using unified weights.
+     *
+     * @param chunk
+     * @param unified_weights
+     * @throws Exception
+     */
+    private void trainNewClassifier(Instances chunk, float[] unified_weights) throws Exception {
+
+        // Create new classifier to train
+        OneClassClassifier new_classifier = new OneClassClassifier();
+        new_classifier.setTargetClassLabel(Integer.toString(class_idx));
+
+        // Update chunk with new weights
+        for (int i = 0; i < chunk.size(); i++) {
+            Instance instance = chunk.instance(i);
+            instance.setWeight(unified_weights[i]);
+            chunk.set(i, instance);
+        }
+
+        // Tell the chunk which index it's class is on
+        chunk.setClassIndex(chunk.numAttributes() - 1);
+
+        // Filter out unwanted attributes
+        chunk = filterByAttribute(chunk, attr_idx);
+
+        // Train classifier with new weighted chunk
+        new_classifier.buildClassifier(chunk);
+
+        // VOCL module contains the k most recent classifiers
+        if (classifiers.size() == k) {
+            // Full so deque last recently used
+            classifiers.remove();
+        }
+
+        // Add most recently used classifier
+        classifiers.add(new_classifier);
     }
 
     private int[] clusterVagueLabel(Instances chunk) throws Exception {
@@ -135,5 +204,21 @@ public class VOCL {
         Arrays.fill(cluster_sizes, 0);
 
         return labels;
+    }
+
+    /**
+     * Filters out unwanted attributes from each instance.
+     *
+     * @param data          The training/testing fold to filter.
+     * @param attribute_idx The only attribute you want in each instance.
+     * @return The filtered chunk.
+     * @throws Exception
+     */
+    public static Instances filterByAttribute(Instances data, int attribute_idx) throws Exception {
+        filter.setAttributeIndices(Integer.toString(attribute_idx)); // attr0, attr1, class (attr0 = index 2 NOT 0!)
+        filter.setInputFormat(data);
+        Instances new_data = Filter.useFilter(data, filter);
+        new_data.setClassIndex(new_data.numAttributes() - 1);
+        return new_data;
     }
 }

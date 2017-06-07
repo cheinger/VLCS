@@ -11,7 +11,6 @@ import java.util.Arrays;
 import java.util.Collections;
 
 public class LocalWeighting {
-    private Remove filter = new Remove();
     private int folds;
 
     public LocalWeighting(int folds) {
@@ -55,8 +54,8 @@ public class LocalWeighting {
 
             System.out.println("folds: " + folds + ", chunk_size: " + testing_set.size());
 
-            Instances new_training_set = filterByAttribute(training_set, attribute_idx);
-            Instances new_testing_set = filterByAttribute(testing_set, attribute_idx);
+            Instances new_training_set = VOCL.filterByAttribute(training_set, attribute_idx);
+            Instances new_testing_set = VOCL.filterByAttribute(testing_set, attribute_idx);
 
             assert new_training_set.size() == new_training_set.size() : "filtering changed the size of the set.";
             assert new_testing_set.size() == testing_set.size() : "filtering changed the size of the set.";
@@ -92,21 +91,5 @@ public class LocalWeighting {
         }
 
         return weights;
-    }
-
-    /**
-     * Filters out unwanted attributes from each instance.
-     *
-     * @param data          The training/testing fold to filter.
-     * @param attribute_idx The only attribute you want in each instance.
-     * @return The filtered chunk.
-     * @throws Exception
-     */
-    private Instances filterByAttribute(Instances data, int attribute_idx) throws Exception {
-        filter.setAttributeIndices(Integer.toString(attribute_idx)); // attr0, attr1, class (attr0 = index 2 NOT 0!)
-        filter.setInputFormat(data);
-        Instances new_data = Filter.useFilter(data, filter);
-        new_data.setClassIndex(new_data.numAttributes() - 1);
-        return new_data;
     }
 }
