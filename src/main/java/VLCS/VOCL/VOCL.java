@@ -57,7 +57,7 @@ public class VOCL {
         }
 
         // Process partial chunk
-        // processChunk(chunk);
+        processChunk(chunk);
     }
 
     /**
@@ -78,7 +78,15 @@ public class VOCL {
         float[] WGx = global.getWeights(attr_chunk, classifiers);
 
         float[] Wx = calculateUnifiedWeights(WLx, WGx);
-        trainNewClassifier(attr_chunk, Wx);
+        OneClassClassifier Li = trainNewClassifier(attr_chunk, Wx);
+
+        // TODO weight classifiers
+        // TODO form weighted classifier ensemble
+
+        // Shift out oldest classifier and push on the most recently used one
+        updateClassifiers(Li);
+
+        assert classifiers.size() <= k - 1 : "ensemble size expected to be <= k - 1.";
     }
 
     private float[] calculateUnifiedWeights(float[] WLx, float[] WGx) {
@@ -109,7 +117,7 @@ public class VOCL {
      * @param unified_weights
      * @throws Exception
      */
-    private void trainNewClassifier(Instances chunk, float[] unified_weights) throws Exception {
+    private OneClassClassifier trainNewClassifier(Instances chunk, float[] unified_weights) throws Exception {
 
         Instances new_chunk = new Instances(chunk);
 
@@ -127,14 +135,19 @@ public class VOCL {
         // Train classifier with new weighted chunk
         new_classifier.buildClassifier(new_chunk);
 
+        return new_classifier;
+    }
+
+    private void updateClassifiers(OneClassClassifier new_classifier) {
+
+        // Add most recently used classifier
+        classifiers.add(new_classifier);
+
         // VOCL module contains the k most recent classifiers
         if (classifiers.size() == k) {
             // Full so deque last recently used
             classifiers.remove();
         }
-
-        // Add most recently used classifier
-        classifiers.add(new_classifier);
     }
 
     private int[] clusterVagueLabel(Instances chunk) throws Exception {
