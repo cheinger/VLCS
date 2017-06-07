@@ -89,7 +89,6 @@ public class LocalWeighting {
                     System.out.println("unlabelled -> old: " + ((weight / folds) + 1) + "\taverge index: " + weights[p]);
                 }
             }
-
         }
 
         return weights;
