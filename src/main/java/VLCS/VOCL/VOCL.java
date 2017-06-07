@@ -3,6 +3,7 @@ package VLCS.VOCL;
 import java.util.*;
 import java.util.Map.Entry;
 
+import meka.classifiers.multitarget.meta.EnsembleMT;
 import weka.classifiers.meta.OneClassClassifier;
 import weka.clusterers.SimpleKMeans;
 import weka.core.Instance;
@@ -80,12 +81,52 @@ public class VOCL {
         OneClassClassifier Li = trainNewClassifier(attr_chunk, Wx);
 
         // TODO weight classifiers
+        if (classifiers.size() > 0) {
+            float[] Gl = weightClassifiers(Li, Wx, attr_chunk, PSi);
+        }
         // TODO form weighted classifier ensemble
 
-        // Shift out oldest classifier and push on the most recently used one
-        updateClassifiers(Li);
+        // Append new classifier to ensemble for make it k classifiers
+        classifiers.add(Li);
 
-        assert classifiers.size() <= k - 1 : "ensemble size expected to be <= k - 1.";
+        // Shift out oldest classifier
+        if (classifiers.size() == k) classifiers.remove();
+    }
+
+    private float[] weightClassifiers(OneClassClassifier Li, float[] Wx, Instances chunk, int[] labels) throws Exception {
+
+        float[] Gl = new float[classifiers.size()];
+
+        Gl[classifiers.size() - 1] = pairWiseAgreement(Li, Li, chunk, labels);
+        assert Float.compare(Gl[classifiers.size() - 1], 1.0f) == 0 : "pair-wise agreement against itself must be 1.";
+
+        int i = 0;
+        // Iterate from last recently used to most recently used (excludes Li since it hasn't been appended yet)
+        for (OneClassClassifier classifier : classifiers) {
+            Gl[i++] = pairWiseAgreement(Li, classifier, chunk, labels);
+        }
+
+        return Gl;
+    }
+
+    private float pairWiseAgreement(OneClassClassifier ol, OneClassClassifier oj, Instances chunk, int[] labels) throws Exception {
+
+        int unlabeled_set_size = 0;
+        float weight = 0.f;
+
+        for (int i = 0; i < chunk.size(); i++) {
+            // If unlabeled
+            if (labels[i] == 0) {
+                Instance instance = chunk.instance(i);
+                // If classifiers predict same value increase weight
+                if (Double.compare(ol.classifyInstance(instance), oj.classifyInstance(instance)) == 0) {
+                    weight += 1.0f;
+                }
+                unlabeled_set_size++;
+            }
+        }
+
+        return weight / unlabeled_set_size;
     }
 
     /**
@@ -142,24 +183,6 @@ public class VOCL {
         new_classifier.buildClassifier(new_chunk);
 
         return new_classifier;
-    }
-
-    /**
-     * Shifts out the last recently used classifier and adds on the most recently used one.
-     * This makes sure the classifiers are adapting to the new data.
-     *
-     * @param new_classifier The most recently used classifier
-     */
-    private void updateClassifiers(OneClassClassifier new_classifier) {
-
-        // Add most recently used classifier
-        classifiers.add(new_classifier);
-
-        // VOCL module contains the k most recent classifiers
-        if (classifiers.size() == k) {
-            // Full so deque last recently used
-            classifiers.remove();
-        }
     }
 
     /**
