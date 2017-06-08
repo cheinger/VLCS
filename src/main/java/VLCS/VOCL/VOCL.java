@@ -29,7 +29,8 @@ public class VOCL {
 
     private LocalWeighting local;
     private GlobalWeighting global;
-    private Queue<MOAOneClassClassifier> classifiers = new LinkedList<>();
+    private OneClassClassifierEnsemble ensemble = new OneClassClassifierEnsemble(k);
+//    private Queue<MOAOneClassClassifier> classifiers = new LinkedList<>();
     private static Remove filter = new Remove();
 
     public VOCL(VagueLabelMethod label_method) {
@@ -79,42 +80,43 @@ public class VOCL {
         attr_chunk.setClassIndex(attr_chunk.numAttributes() - 1);
 
         float[] WLx = local.getWeights(attr_chunk, PSi, attr_idx, class_idx);
-        float[] WGx = global.getWeights(attr_chunk, classifiers);
+        float[] WGx = global.getWeights(attr_chunk, ensemble);
 
         float[] Wx = calculateUnifiedWeights(WLx, WGx);
         MOAOneClassClassifier Li = trainNewClassifier(attr_chunk, Wx);
 
         // TODO weight classifiers
-        if (classifiers.size() > 0) {
+        if (ensemble.size() > 0) {
             float[] Gl = weightClassifiers(Li, Wx, attr_chunk, PSi);
-//            OneClassClassifierEnsemble ensemble = new OneClassClassifierEnsemble();
-//            for (int i = 0; i < 10; i++)
-//                ensemble.addClassifier(new MOAOneClassClassifier(), Gl[0]);
-////
-//            System.out.println("ENSEMBLE SIZE: " + ensemble.storedCountOption);
 
-
+            ensemble.updateClassifierWeights(Gl);
         }
-        // TODO form weighted classifier ensemble
+
+        // TODO predict Si+1 accuracy
 
         // Append new classifier to ensemble for make it k classifiers
-        classifiers.add(Li);
+        ensemble.addNewClassifier(Li);
+        // classifiers.add(Li);
 
         // Shift out oldest classifier
-        if (classifiers.size() == k) classifiers.remove();
+        if (ensemble.size() == k) ensemble.removeLastRecentClassifier();
+        //if (classifiers.size() == k) classifiers.remove();
     }
 
     private float[] weightClassifiers(MOAOneClassClassifier Li, float[] Wx, Instances chunk, int[] labels) throws Exception {
 
-        float[] Gl = new float[classifiers.size()];
+        float[] Gl = new float[ensemble.size()];
 
-        Gl[classifiers.size() - 1] = pairWiseAgreement(Li, Li, chunk, labels);
-        assert Float.compare(Gl[classifiers.size() - 1], 1.0f) == 0 : "pair-wise agreement against itself must be 1.";
+        Gl[ensemble.size() - 1] = pairWiseAgreement(Li, Li, chunk, labels);
+        assert Float.compare(Gl[ensemble.size() - 1], 1.0f) == 0 : "pair-wise agreement against itself must be 1.";
 
-        int i = 0;
+//        int i = 0;
         // Iterate from last recently used to most recently used (excludes Li since it hasn't been appended yet)
-        for (MOAOneClassClassifier classifier : classifiers) {
-            Gl[i++] = pairWiseAgreement(Li, classifier, chunk, labels);
+//        for (MOAOneClassClassifier classifier : classifiers) {
+//            Gl[i++] = pairWiseAgreement(Li, classifier, chunk, labels);
+//        }
+        for (int i = 0; i < ensemble.size(); i++) {
+            Gl[i] = pairWiseAgreement(Li, (MOAOneClassClassifier)ensemble.getSubClassifiers()[i], chunk, labels);
         }
 
         return Gl;
