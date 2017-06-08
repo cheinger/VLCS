@@ -8,7 +8,7 @@ import java.util.Queue;
 
 public class GlobalWeighting {
 
-    public float[] getWeights(Instances chunk, Queue<OneClassClassifier> classifiers) throws Exception {
+    public float[] getWeights(Instances chunk, Queue<MOAOneClassClassifier> classifiers) throws Exception {
 
         float[] weights = new float[chunk.size()];
 
@@ -19,7 +19,7 @@ public class GlobalWeighting {
 
             System.out.println("mum classifiers: " + classifiers.size());
 
-            for (OneClassClassifier classifier : classifiers) {
+            for (MOAOneClassClassifier classifier : classifiers) {
                 double index = classifier.classifyInstance(instance);
                 if ((int) index == Integer.parseInt(classifier.getTargetClassLabel())) {
                     percent_predicted_positive += 1.0f;

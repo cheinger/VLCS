@@ -2,6 +2,14 @@ package VLCS.VOCL;
 
 import java.util.*;
 
+import moa.classifiers.meta.AccuracyWeightedEnsemble;
+import moa.classifiers.meta.WEKAClassifier;
+import moa.core.ObjectRepository;
+import moa.options.ClassOption;
+import moa.options.FloatOption;
+import moa.tasks.StandardTaskMonitor;
+import weka.classifiers.Classifier;
+import weka.classifiers.meta.MOA;
 import weka.classifiers.meta.OneClassClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -21,7 +29,7 @@ public class VOCL {
 
     private LocalWeighting local;
     private GlobalWeighting global;
-    private Queue<OneClassClassifier> classifiers = new LinkedList<>();
+    private Queue<MOAOneClassClassifier> classifiers = new LinkedList<>();
     private static Remove filter = new Remove();
 
     public VOCL(VagueLabelMethod label_method) {
@@ -74,13 +82,18 @@ public class VOCL {
         float[] WGx = global.getWeights(attr_chunk, classifiers);
 
         float[] Wx = calculateUnifiedWeights(WLx, WGx);
-        OneClassClassifier Li = trainNewClassifier(attr_chunk, Wx);
+        MOAOneClassClassifier Li = trainNewClassifier(attr_chunk, Wx);
 
         // TODO weight classifiers
         if (classifiers.size() > 0) {
             float[] Gl = weightClassifiers(Li, Wx, attr_chunk, PSi);
-            OneClassClassifierEnsemble ensemble = new OneClassClassifierEnsemble();
-            ensemble.addClassifier(Li, Gl[classifiers.size() - 1]);
+//            OneClassClassifierEnsemble ensemble = new OneClassClassifierEnsemble();
+//            for (int i = 0; i < 10; i++)
+//                ensemble.addClassifier(new MOAOneClassClassifier(), Gl[0]);
+////
+//            System.out.println("ENSEMBLE SIZE: " + ensemble.storedCountOption);
+
+
         }
         // TODO form weighted classifier ensemble
 
@@ -91,7 +104,7 @@ public class VOCL {
         if (classifiers.size() == k) classifiers.remove();
     }
 
-    private float[] weightClassifiers(OneClassClassifier Li, float[] Wx, Instances chunk, int[] labels) throws Exception {
+    private float[] weightClassifiers(MOAOneClassClassifier Li, float[] Wx, Instances chunk, int[] labels) throws Exception {
 
         float[] Gl = new float[classifiers.size()];
 
@@ -100,14 +113,14 @@ public class VOCL {
 
         int i = 0;
         // Iterate from last recently used to most recently used (excludes Li since it hasn't been appended yet)
-        for (OneClassClassifier classifier : classifiers) {
+        for (MOAOneClassClassifier classifier : classifiers) {
             Gl[i++] = pairWiseAgreement(Li, classifier, chunk, labels);
         }
 
         return Gl;
     }
 
-    private float pairWiseAgreement(OneClassClassifier ol, OneClassClassifier oj, Instances chunk, int[] labels) throws Exception {
+    private float pairWiseAgreement(MOAOneClassClassifier ol, MOAOneClassClassifier oj, Instances chunk, int[] labels) throws Exception {
 
         int unlabeled_set_size = 0;
         float weight = 0.f;
@@ -162,12 +175,12 @@ public class VOCL {
      * @param unified_weights
      * @throws Exception
      */
-    private OneClassClassifier trainNewClassifier(Instances chunk, float[] unified_weights) throws Exception {
+    private MOAOneClassClassifier trainNewClassifier(Instances chunk, float[] unified_weights) throws Exception {
 
         Instances new_chunk = new Instances(chunk);
 
         // Create new classifier to train
-        OneClassClassifier new_classifier = new OneClassClassifier();
+        MOAOneClassClassifier new_classifier = new MOAOneClassClassifier();
         new_classifier.setTargetClassLabel(Integer.toString(class_idx));
 
         // Update chunk with new weights
