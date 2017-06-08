@@ -53,6 +53,7 @@ public class GlobalWeighting {
 //                }
                 MOAOneClassClassifier moa_classifier = (MOAOneClassClassifier)classifiers.getSubClassifiers()[j];
                 double index = moa_classifier.classifyInstance(instance);
+                // If predict's as positive (part of class)
                 if ((int) index == Integer.parseInt(moa_classifier.getTargetClassLabel())) {
                     percent_predicted_positive += 1.0f;
                 }

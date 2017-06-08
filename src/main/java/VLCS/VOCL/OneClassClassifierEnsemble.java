@@ -35,6 +35,7 @@ public class OneClassClassifierEnsemble extends WeightedMajorityAlgorithm {
                 ',');
 
         prepareForUseImpl(new StandardTaskMonitor(), null);
+        trainingWeightSeenByModel = 1.0f;
     }
 
     public void addNewClassifier(MOAOneClassClassifier trained_classifier) {

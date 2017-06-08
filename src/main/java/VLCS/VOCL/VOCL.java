@@ -9,6 +9,9 @@ import moa.options.ClassOption;
 import moa.options.FloatOption;
 import moa.tasks.StandardTaskMonitor;
 import weka.classifiers.Classifier;
+import weka.classifiers.evaluation.NominalPrediction;
+import weka.classifiers.evaluation.NumericPrediction;
+import weka.classifiers.evaluation.Prediction;
 import weka.classifiers.meta.MOA;
 import weka.classifiers.meta.OneClassClassifier;
 import weka.core.Instance;
@@ -27,6 +30,9 @@ public class VOCL {
 
     private VagueLabeling vague_clustering = new ClusterVagueLabeling();
 
+//    private MOAOneClassClassifier test_classifier = new MOAOneClassClassifier();
+    private int test_count = 0;
+
     private LocalWeighting local;
     private GlobalWeighting global;
     private OneClassClassifierEnsemble ensemble = new OneClassClassifierEnsemble(k);
@@ -38,7 +44,7 @@ public class VOCL {
         this.local = new LocalWeighting(4); // Specify number of folds
         this.global = new GlobalWeighting();
         this.class_idx = 13; // FIXME
-        this.attr_idx = 2; // FIXME
+        this.attr_idx = 1; // FIXME
     }
 
     /**
@@ -54,6 +60,8 @@ public class VOCL {
         Instances chunk = new Instances(stream);
         chunk.clear();
 
+        System.out.println("Finished clearing");
+
         for (Instance instance : stream) {
             chunk.add(instance);
             if (chunk.size() == chunk_size) {
@@ -68,10 +76,11 @@ public class VOCL {
     /**
      * Main Pseudo code method from paper (Figure 5.)
      *
-     * @param chunk
+     * @param chunk The chunk to test for the previous ensemble and the chunk to train for the next classifier
+     * @return      The predict chunk accuracy
      * @throws Exception
      */
-    private void processChunk(Instances chunk) throws Exception {
+    private double processChunk(Instances chunk) throws Exception {
 
         int[] PSi = vague_clustering.label(chunk);
 
@@ -79,29 +88,102 @@ public class VOCL {
         Instances attr_chunk = filterByAttribute(chunk, attr_idx);
         attr_chunk.setClassIndex(attr_chunk.numAttributes() - 1);
 
+        // We can classify as ensemble contains trained classifiers
+        if (ensemble.size() > 0)
+        {
+            for (Instance instance : attr_chunk) {
+//            System.out.println("Classifier accuracy: " + evaluateChunkAccuracy(Li, attr_chunk));
+                System.out.println("VOTE: ------------");
+                double[] votes = ensemble.getVotesForInstance(instance);
+                for (int i = 0; i < votes.length; i++) {
+                    System.out.println("VOTE: " + votes[i]);
+                }
+            }
+        }
+
         float[] WLx = local.getWeights(attr_chunk, PSi, attr_idx, class_idx);
         float[] WGx = global.getWeights(attr_chunk, ensemble);
-
         float[] Wx = calculateUnifiedWeights(WLx, WGx);
-        MOAOneClassClassifier Li = trainNewClassifier(attr_chunk, Wx);
 
-        // TODO weight classifiers
+        for (int i = 0; i < Wx.length; i++) {
+            System.out.println("UNIFIED WEIGHT: " + WGx[i]);
+        }
+        System.out.println("UNIFIED WEIGHT ======" + ensemble.size());
+        MOAOneClassClassifier Li = trainNewClassifier(attr_chunk, Wx);
+//        // TODO weight classifiers
         if (ensemble.size() > 0) {
             float[] Gl = weightClassifiers(Li, Wx, attr_chunk, PSi);
 
             ensemble.updateClassifierWeights(Gl);
         }
-
-        // TODO predict Si+1 accuracy
-
+//
+//        // TODO predict Si+1 accuracy
+//
         // Append new classifier to ensemble for make it k classifiers
         ensemble.addNewClassifier(Li);
-        // classifiers.add(Li);
-
-        // Shift out oldest classifier
+//        // classifiers.add(Li);
+//
+//        // Shift out oldest classifier
         if (ensemble.size() == k) ensemble.removeLastRecentClassifier();
-        //if (classifiers.size() == k) classifiers.remove();
+//        if (classifiers.size() == k) classifiers.remove();
+        test_count++;
+
+        return 0.f;
     }
+
+    public Prediction getPrediction(Classifier classifier, Instance test) throws Exception {
+
+        double actual = test.classValue();
+        double [] dist = classifier.distributionForInstance(test);
+        if (test.classAttribute().isNominal()) {
+            return new NominalPrediction(actual, dist, test.weight());
+        } else {
+            return new NumericPrediction(actual, dist[0], test.weight());
+        }
+    }
+
+    /**
+     * For each instance it checks whether it predicts it should be in the class or not and then
+     * calculates its overall accuracy for the classifier on the given chunk.
+     * @param chunk The chunk to predict
+     * @return      The overall accuracy
+     * @throws Exception
+     */
+    private double evaluateChunkAccuracy(Classifier classifier, Instances chunk) throws Exception {
+
+        int correct_predictions = 0;
+        for (Instance instance : chunk) {
+            Prediction pred = getPrediction(classifier, instance);
+
+            // If it's not part of class then ensure it predicted it wasn't.
+            if ((int)pred.actual() != class_idx && (int)pred.predicted() != class_idx) {
+                correct_predictions++;
+            }
+
+            // If its part of the class then sure it predicted it was.
+            if ((int)pred.actual() == class_idx && (int)pred.predicted() == class_idx) {
+                correct_predictions++;
+            }
+        }
+
+        return (double)correct_predictions / (double)chunk.size();
+    }
+
+//    private void processChunk(Instances chunk) throws Exception
+//    {
+//        Instances filtered_chunk = filterByAttribute(chunk, attr_idx);
+//        filtered_chunk.setClassIndex(filtered_chunk.numAttributes() - 1);
+//        if (test_count > 0)
+//        {
+//            System.out.println("Classifier accuracy: " + evaluateChunkAccuracy(filtered_chunk));
+//        }
+//
+////        for (Instance instance : filtered_chunk) {
+////            test_classifier.trainOnInstance(instance);
+////        }
+////        test_classifier.buildClassifier(filtered_chunk);
+//        test_count++;
+//    }
 
     private float[] weightClassifiers(MOAOneClassClassifier Li, float[] Wx, Instances chunk, int[] labels) throws Exception {
 
@@ -173,8 +255,10 @@ public class VOCL {
     /**
      * Trains a new classifier using unified weights.
      *
-     * @param chunk
-     * @param unified_weights
+     * Trains a new classifier given the unified weights.
+     * @param chunk             The testing data set
+     * @param unified_weights   The weights to train it by
+     * @return                  The trained classifier
      * @throws Exception
      */
     private MOAOneClassClassifier trainNewClassifier(Instances chunk, float[] unified_weights) throws Exception {
@@ -197,6 +281,34 @@ public class VOCL {
 
         return new_classifier;
     }
+
+    /**
+     * Trains a new classifier given the unified weights.
+     * @param chunk             The testing data set
+     * @param unified_weights   The weights to train it by
+     * @return                  The trained classifier
+     * @throws Exception
+     */
+//    private MOAOneClassClassifier trainNewClassifier(Instances chunk, float[] unified_weights) throws Exception {
+//
+//        Instances testing_chunk = new Instances(chunk);
+//
+//        // Create new classifier to train
+//        MOAOneClassClassifier new_classifier = new MOAOneClassClassifier();
+//        // Assigns the target class we are trying to predict
+//        new_classifier.setTargetClassLabel(Integer.toString(class_idx));
+//
+//        // Train classifier on each instance with unified weight
+//        for (int i = 0; i < testing_chunk.size(); i++) {
+//            Instance instance = testing_chunk.instance(i);
+//            instance.setWeight(unified_weights[i]);
+//            assert unified_weights[i] >= 0.f && unified_weights[i] <= 1.f : "invalid weight.";
+//            System.out.println("INSTANCE WEIGHT: " + unified_weights[i]);
+//            new_classifier.trainOnInstance(instance);
+//        }
+//
+//        return new_classifier;
+//    }
 
     /**
      * Filters out unwanted attributes from each instance.
