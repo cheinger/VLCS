@@ -92,32 +92,29 @@ public class VOCL {
         attr_chunk.setClassIndex(attr_chunk.numAttributes() - 1);
 
         // We can classify as ensemble contains trained classifiers
-//        if (ensemble.size() > 0)
-//        {
-//            predicted_accuracy = evaluateChunkAccuracy(attr_chunk);
-//        }
+        if (ensemble.size() > 0)
+        {
+            predicted_accuracy = evaluateChunkAccuracy(attr_chunk);
+        }
 
         float[] WLx = local.getWeights(attr_chunk, PSi, attr_idx, class_idx);
         float[] WGx = global.getWeights(attr_chunk, ensemble);
         float[] Wx = calculateUnifiedWeights(WLx, WGx);
 
         MOAOneClassClassifier Li = trainNewClassifier(attr_chunk, Wx);
-////        // TODO weight classifiers
-//        if (ensemble.size() > 0) {
-//            float[] Gl = weightClassifiers(Li, Wx, attr_chunk, PSi);
-//
-//            ensemble.updateClassifierWeights(Gl);
-//        }
-////
-////        // TODO predict Si+1 accuracy
-////
-//        // Append new classifier to ensemble for make it k classifiers
+        // TODO weight classifiers
+        if (ensemble.size() > 0) {
+            assert ensemble.size() != k : "ensemble size must be == k - 1";
+            float[] Gl = weightClassifiers(Li, Wx, attr_chunk, PSi);
+
+            ensemble.updateClassifierWeights(Gl);
+        }
+
+        // Append new classifier to ensemble for make it k classifiers
         ensemble.pushClassifier(Li);
-////        // classifiers.add(Li);
-////
-////        // Shift out oldest classifier
+
+        // Shift out oldest classifier
         if (ensemble.size() == k) ensemble.popLastClassifier();
-////        if (classifiers.size() == k) classifiers.remove();
 
         return predicted_accuracy;
     }
@@ -188,14 +185,16 @@ public class VOCL {
         Gl[ensemble.size() - 1] = pairWiseAgreement(Li, Li, chunk, labels);
         assert Float.compare(Gl[ensemble.size() - 1], 1.0f) == 0 : "pair-wise agreement against itself must be 1.";
 
-//        int i = 0;
+        int i = 0;
         // Iterate from last recently used to most recently used (excludes Li since it hasn't been appended yet)
-//        for (MOAOneClassClassifier classifier : classifiers) {
-//            Gl[i++] = pairWiseAgreement(Li, classifier, chunk, labels);
-//        }
-        for (int i = 0; i < ensemble.size(); i++) {
-            Gl[i] = pairWiseAgreement(Li, (MOAOneClassClassifier)ensemble.getSubClassifiers()[i], chunk, labels);
+        Queue<MOAOneClassClassifier> classifiers = ensemble.getClassifiers();
+        for (MOAOneClassClassifier classifier : classifiers) {
+            Gl[i++] = pairWiseAgreement(Li, classifier, chunk, labels);
         }
+
+        //        for (int i = 0; i < ensemble.size(); i++) {
+//            Gl[i] = pairWiseAgreement(Li, (MOAOneClassClassifier)ensemble.getSubClassifiers()[i], chunk, labels);
+//        }
 
         return Gl;
     }
