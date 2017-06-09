@@ -2,18 +2,9 @@ package VLCS.VOCL;
 
 import java.util.*;
 
-import moa.classifiers.meta.AccuracyWeightedEnsemble;
-import moa.classifiers.meta.WEKAClassifier;
-import moa.core.ObjectRepository;
-import moa.options.ClassOption;
-import moa.options.FloatOption;
-import moa.tasks.StandardTaskMonitor;
-import weka.classifiers.Classifier;
 import weka.classifiers.evaluation.NominalPrediction;
 import weka.classifiers.evaluation.NumericPrediction;
 import weka.classifiers.evaluation.Prediction;
-import weka.classifiers.meta.MOA;
-import weka.classifiers.meta.OneClassClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.Filter;
@@ -30,20 +21,17 @@ public class VOCL {
 
     private VagueLabeling vague_clustering = new ClusterVagueLabeling();
 
-//    private MOAOneClassClassifier test_classifier = new MOAOneClassClassifier();
-    private long chunk_count = 0;
-
     private LocalWeighting local;
     private GlobalWeighting global;
     private OneClassClassifierEnsemble ensemble = new OneClassClassifierEnsemble(k);
     private static Remove filter = new Remove();
 
-    public VOCL(VagueLabelMethod label_method) {
+    public VOCL(VagueLabelMethod label_method, int class_idx, int attr_idx) {
         this.label_method = label_method;
-        this.local = new LocalWeighting(4); // Specify number of folds
+        this.local = new LocalWeighting(10); // Specify number of folds
         this.global = new GlobalWeighting();
-        this.class_idx = 13; // FIXME
-        this.attr_idx = 2; // FIXME
+        this.class_idx = class_idx;
+        this.attr_idx = attr_idx; // TODO probability shifting
     }
 
     /**
@@ -67,7 +55,6 @@ public class VOCL {
                 double predicted_accuracy = processChunk(chunk);
                 System.out.println("Predicted_accuracy: " + predicted_accuracy);
                 chunk.clear();
-                chunk_count++;
             }
         }
 
@@ -123,13 +110,8 @@ public class VOCL {
 
         double actual = test.classValue();
         double [] dist = ensemble.getVotesForInstance(test);
-//        for (int i = 0; i < dist.length; i++) {
-//            System.out.println("VOTE: " + dist[i]);
-//        }
         if (test.classAttribute().isNominal()) {
-            NominalPrediction pred = new NominalPrediction(actual, dist, test.weight());
-//            System.out.println("Actual: " + pred.actual() + " Predict: " + pred.predicted());
-            return pred;
+            return new NominalPrediction(actual, dist, test.weight());
         } else {
             return new NumericPrediction(actual, dist[0], test.weight());
         }
@@ -162,22 +144,6 @@ public class VOCL {
         return (double)correct_predictions / (double)chunk.size();
     }
 
-//    private void processChunk(Instances chunk) throws Exception
-//    {
-//        Instances filtered_chunk = filterByAttribute(chunk, attr_idx);
-//        filtered_chunk.setClassIndex(filtered_chunk.numAttributes() - 1);
-//        if (test_count > 0)
-//        {
-//            System.out.println("Classifier accuracy: " + evaluateChunkAccuracy(filtered_chunk));
-//        }
-//
-////        for (Instance instance : filtered_chunk) {
-////            test_classifier.trainOnInstance(instance);
-////        }
-////        test_classifier.buildClassifier(filtered_chunk);
-//        test_count++;
-//    }
-
     private float[] weightClassifiers(MOAOneClassClassifier Li, float[] Wx, Instances chunk, int[] labels) throws Exception {
 
         float[] Gl = new float[ensemble.size()];
@@ -191,10 +157,6 @@ public class VOCL {
         for (MOAOneClassClassifier classifier : classifiers) {
             Gl[i++] = pairWiseAgreement(Li, classifier, chunk, labels);
         }
-
-        //        for (int i = 0; i < ensemble.size(); i++) {
-//            Gl[i] = pairWiseAgreement(Li, (MOAOneClassClassifier)ensemble.getSubClassifiers()[i], chunk, labels);
-//        }
 
         return Gl;
     }
@@ -278,38 +240,11 @@ public class VOCL {
         }
 
         // Train classifier with new weighted chunk
+        // OneClassClassifier requires training this way opposed to trainOnInstance
         new_classifier.buildClassifier(new_chunk);
 
         return new_classifier;
     }
-
-    /**
-     * Trains a new classifier given the unified weights.
-     * @param chunk             The testing data set
-     * @param unified_weights   The weights to train it by
-     * @return                  The trained classifier
-     * @throws Exception
-     */
-//    private MOAOneClassClassifier trainNewClassifier(Instances chunk, float[] unified_weights) throws Exception {
-//
-//        Instances testing_chunk = new Instances(chunk);
-//
-//        // Create new classifier to train
-//        MOAOneClassClassifier new_classifier = new MOAOneClassClassifier();
-//        // Assigns the target class we are trying to predict
-//        new_classifier.setTargetClassLabel(Integer.toString(class_idx));
-//
-//        // Train classifier on each instance with unified weight
-//        for (int i = 0; i < testing_chunk.size(); i++) {
-//            Instance instance = testing_chunk.instance(i);
-//            instance.setWeight(unified_weights[i]);
-//            assert unified_weights[i] >= 0.f && unified_weights[i] <= 1.f : "invalid weight.";
-//            System.out.println("INSTANCE WEIGHT: " + unified_weights[i]);
-//            new_classifier.trainOnInstance(instance);
-//        }
-//
-//        return new_classifier;
-//    }
 
     /**
      * Filters out unwanted attributes from each instance.

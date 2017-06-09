@@ -7,9 +7,6 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.AbstractMap.SimpleEntry;
 
-/**
- * Created by xavier on 7/06/17.
- */
 public class ClusterVagueLabeling extends VagueLabeling {
 
     private final int k = 20; // Recommended in paper

@@ -18,8 +18,8 @@ public class VLCS {
     }
 
     public void run() {
-        VOCL vocl = new VOCL(VOCL.VagueLabelMethod.CLUSTER);
-        OCCS occs = new OCCS();
+//        VOCL vocl = new VOCL(VOCL.VagueLabelMethod.CLUSTER);
+//        OCCS occs = new OCCS();
 
     }
 }

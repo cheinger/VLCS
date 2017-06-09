@@ -14,9 +14,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
 
-/**
- * Created by xavier.
- */
 public class OneClassClassifierEnsemble implements Classifier {
 
     private Queue<MOAOneClassClassifier> ensemble;
