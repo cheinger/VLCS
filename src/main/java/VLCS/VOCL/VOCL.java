@@ -31,12 +31,11 @@ public class VOCL {
     private VagueLabeling vague_clustering = new ClusterVagueLabeling();
 
 //    private MOAOneClassClassifier test_classifier = new MOAOneClassClassifier();
-    private int test_count = 0;
+    private long chunk_count = 0;
 
     private LocalWeighting local;
     private GlobalWeighting global;
     private OneClassClassifierEnsemble ensemble = new OneClassClassifierEnsemble(k);
-//    private Queue<MOAOneClassClassifier> classifiers = new LinkedList<>();
     private static Remove filter = new Remove();
 
     public VOCL(VagueLabelMethod label_method) {
@@ -65,8 +64,10 @@ public class VOCL {
         for (Instance instance : stream) {
             chunk.add(instance);
             if (chunk.size() == chunk_size) {
-                processChunk(chunk);
+                double predicted_accuracy = processChunk(chunk);
+                System.out.println("Predicted_accuracy: " + predicted_accuracy);
                 chunk.clear();
+                chunk_count++;
             }
         }
 
@@ -91,54 +92,47 @@ public class VOCL {
         attr_chunk.setClassIndex(attr_chunk.numAttributes() - 1);
 
         // We can classify as ensemble contains trained classifiers
-        if (ensemble.size() > 0)
-        {
-            for (Instance instance : attr_chunk) {
-                System.out.println("Classifier accuracy: " + evaluateChunkAccuracy( null, attr_chunk));
-                System.out.println("VOTE: ------------");
-                double[] votes = ensemble.getVotesForInstance(instance);
-                for (int i = 0; i < votes.length; i++) {
-                    System.out.println("VOTE: " + votes[i]);
-                }
-            }
-        }
+//        if (ensemble.size() > 0)
+//        {
+//            predicted_accuracy = evaluateChunkAccuracy(attr_chunk);
+//        }
 
         float[] WLx = local.getWeights(attr_chunk, PSi, attr_idx, class_idx);
         float[] WGx = global.getWeights(attr_chunk, ensemble);
         float[] Wx = calculateUnifiedWeights(WLx, WGx);
 
-        for (int i = 0; i < Wx.length; i++) {
-            System.out.println("UNIFIED WEIGHT: " + Wx[i]);
-        }
-        System.out.println("UNIFIED WEIGHT ======" + ensemble.size());
         MOAOneClassClassifier Li = trainNewClassifier(attr_chunk, Wx);
-//        // TODO weight classifiers
-        if (ensemble.size() > 0) {
-            float[] Gl = weightClassifiers(Li, Wx, attr_chunk, PSi);
+////        // TODO weight classifiers
+//        if (ensemble.size() > 0) {
+//            float[] Gl = weightClassifiers(Li, Wx, attr_chunk, PSi);
+//
+//            ensemble.updateClassifierWeights(Gl);
+//        }
+////
+////        // TODO predict Si+1 accuracy
+////
+//        // Append new classifier to ensemble for make it k classifiers
+        ensemble.pushClassifier(Li);
+////        // classifiers.add(Li);
+////
+////        // Shift out oldest classifier
+        if (ensemble.size() == k) ensemble.popLastClassifier();
+////        if (classifiers.size() == k) classifiers.remove();
 
-            ensemble.updateClassifierWeights(Gl);
-        }
-//
-//        // TODO predict Si+1 accuracy
-//
-        // Append new classifier to ensemble for make it k classifiers
-        ensemble.addNewClassifier(Li);
-//        // classifiers.add(Li);
-//
-//        // Shift out oldest classifier
-        if (ensemble.size() == k) ensemble.removeLastRecentClassifier();
-//        if (classifiers.size() == k) classifiers.remove();
-        test_count++;
-
-        return 0.f;
+        return predicted_accuracy;
     }
 
-    public Prediction getPrediction(Classifier classifier, Instance test) throws Exception {
+    public Prediction getPrediction(Instance test) throws Exception {
 
         double actual = test.classValue();
-        double [] dist = ensemble.getVotesForInstance(test);//classifier.distributionForInstance(test);
+        double [] dist = ensemble.getVotesForInstance(test);
+//        for (int i = 0; i < dist.length; i++) {
+//            System.out.println("VOTE: " + dist[i]);
+//        }
         if (test.classAttribute().isNominal()) {
-            return new NominalPrediction(actual, dist, test.weight());
+            NominalPrediction pred = new NominalPrediction(actual, dist, test.weight());
+//            System.out.println("Actual: " + pred.actual() + " Predict: " + pred.predicted());
+            return pred;
         } else {
             return new NumericPrediction(actual, dist[0], test.weight());
         }
@@ -151,11 +145,11 @@ public class VOCL {
      * @return      The overall accuracy
      * @throws Exception
      */
-    private double evaluateChunkAccuracy(Classifier classifier, Instances chunk) throws Exception {
+    private double evaluateChunkAccuracy(Instances chunk) throws Exception {
 
         int correct_predictions = 0;
         for (Instance instance : chunk) {
-            Prediction pred = getPrediction(classifier, instance);
+            Prediction pred = getPrediction(instance);
 
             // If it's not part of class then ensure it predicted it wasn't.
             if ((int)pred.actual() != class_idx && (int)pred.predicted() != class_idx) {
@@ -242,6 +236,8 @@ public class VOCL {
 
         float[] Wx = new float[WLx.length];
 
+        System.out.println("UNIFIED_WEIGHTING");
+
         for (int i = 0; i < Wx.length; i++) {
             if (WLx[i] + WGx[i] > 0) {
                 Wx[i] = (WLx[i] + WGx[i] + a) / (Math.abs(WLx[i] - WGx[i]) + b);
@@ -249,6 +245,7 @@ public class VOCL {
             } else {
                 Wx[i] = 0.f;
             }
+            System.out.println("LocalW: " + WLx[i] + " GlobalW: " + WGx[i] + " UnifiedW: " + Wx[i]);
         }
 
         return Wx;
@@ -276,6 +273,7 @@ public class VOCL {
         // Update chunk with new weights
         for (int i = 0; i < new_chunk.size(); i++) {
             Instance instance = new_chunk.instance(i);
+            // TODO Rejection sampling
             instance.setWeight(unified_weights[i]);
             new_chunk.set(i, instance);
         }

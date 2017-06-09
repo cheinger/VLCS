@@ -40,6 +40,10 @@ public class LocalWeighting {
         float[] weights = new float[chunk.size()];
         float min = 0.f, max = 2.f;
 
+        System.out.println("-----------------");
+
+        int[] was_pos_predicted = new int[weights.length];
+
         for (int i = 0; i < folds; i++) {
             classifiers[i] = new OneClassClassifier();
             // Specify attribute interest
@@ -58,7 +62,7 @@ public class LocalWeighting {
                 if (labels[p] == 1) {
                     // If Classifies p as positive then set weight to 1.0 else 0.5;
                     weights[p] = ((int) index == class_idx) ? 1.0f : 0.5f;
-                    System.out.println("instance: " + instance + "\tindex: " + index);
+                    was_pos_predicted[p] = ((int)index == class_idx) ? 1 : 0; // TODO remove
                     // Update for unlabelled samples that are Classified as positive
                 } else if (labels[p] == 0 && (int) index == class_idx) {
                     // Predict unlabelled instance using all <= i OneClassClassifiers to calculate weight
@@ -68,13 +72,14 @@ public class LocalWeighting {
                         // Increase weight if positive
                         weight += ((int) sub_index == class_idx) ? 1.0f : 0.0f;
                     }
+                    was_pos_predicted[p] = 1; // TODO remove
                     weights[p] = (weight / folds) + 1;
                     // Normalize weight values to 0-1 for unlabelled set (USi)
                     weights[p] = (weights[p] - min) / (max - min);
                     assert weights[p] >= 0 && weights[p] <= 1 : "normalized weight must be between 0-1.";
-
-                    System.out.println("unlabelled -> old: " + ((weight / folds) + 1) + "\taverge index: " + weights[p]);
                 }
+
+                System.out.println("Is pos: " + labels[p] + " Was_pos_pred: " + was_pos_predicted[p] + " WLx[p]: " + weights[p]);
             }
         }
 

@@ -11,14 +11,12 @@ import moa.options.ClassOption;
 import moa.options.ListOption;
 import moa.options.Option;
 import moa.options.Options;
-import moa.tasks.StandardTaskMonitor;
 import moa.tasks.TaskMonitor;
-import weka.classifiers.meta.OneClassClassifier;
-import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 //import weka.classifiers.meta.OneClassClassifier;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -87,29 +85,63 @@ import java.util.Queue;
 
 public class OneClassClassifierEnsemble implements Classifier {
 
-    private OneClassClassifier[] ensemble;
+    private Queue<MOAOneClassClassifier> ensemble;
     private float[] ensembleWeights;
-//    private Queue<OneClassClassifier> ensemble = new LinkedList<>();
+
+    public OneClassClassifierEnsemble(int k) {
+        this.ensemble = new LinkedList<>();
+        this.ensembleWeights = new float[k];
+        // Initially all ensembles have equal weights
+        Arrays.fill(this.ensembleWeights, 1.0f);
+    }
+
+    public void pushClassifier(MOAOneClassClassifier new_classifier) {
+        if (this.ensemble.size() < this.ensembleWeights.length) {
+            this.ensemble.add(new_classifier);
+        } else {
+            throw new ArrayStoreException("Most remove last trained classifier first.");
+        }
+    }
+
+    public MOAOneClassClassifier popLastClassifier() {
+        assert this.ensemble.size() == ensembleWeights.length : "current ensemble size must be equal to k before removing.";
+        return this.ensemble.remove();
+    }
+
+    public Queue<MOAOneClassClassifier> getClassifiers() {
+        return ensemble;
+    }
+
+    public void updateClassifierWeights(float[] weights) {
+        assert this.ensemble.size() == weights.length : "Incorrect number of weights.";
+        for (int i = 0; i < weights.length; i++) {
+            this.ensembleWeights[i] = weights[i];
+        }
+    }
+
+    public int size() {
+        return this.ensemble.size();
+    }
 
     @Override
     public double[] getVotesForInstance(Instance inst) {
         DoubleVector combinedVote = new DoubleVector();
-        for(int i = 0; i < this.ensemble.length; ++i) {
-            if(this.ensembleWeights[i] > 0.0D) {
-                try {
-                    // Use distributionForInstance instead of getVotesForInstance as we have trained
-                    // each classifier via buildClassifier()
-                    DoubleVector vote = new DoubleVector(this.ensemble[i].distributionForInstance(inst));
-                    if (vote.sumOfValues() > 0.0D) {
-                        vote.normalize();
-                        vote.scaleValues(this.ensembleWeights[i]);
-                        combinedVote.addValues(vote);
-                    }
-                } catch (Exception e) {
-                    System.err.println(e);
-                }
-            }
-        }
+//        for(int i = 0; i < this.current_size; ++i) {
+//            if(this.ensembleWeights[i] > 0.0D) {
+//                try {
+//                    // Use distributionForInstance instead of getVotesForInstance as we have trained
+//                    // each classifier via buildClassifier()
+//                    DoubleVector vote = new DoubleVector(this.ensemble[i].distributionForInstance(inst));
+//                    if (vote.sumOfValues() > 0.0D) {
+//                        vote.normalize();
+//                        vote.scaleValues(this.ensembleWeights[i]);
+//                        combinedVote.addValues(vote);
+//                    }
+//                } catch (Exception e) {
+//                    System.err.println(e);
+//                }
+//            }
+//        }
 
         return combinedVote.getArrayRef();
     }
@@ -166,7 +198,7 @@ public class OneClassClassifierEnsemble implements Classifier {
 
     @Override
     public Classifier[] getSubClassifiers() {
-        return new Classifier[0];
+        return null;
     }
 
     @Override
@@ -196,7 +228,7 @@ public class OneClassClassifierEnsemble implements Classifier {
 
     @Override
     public Classifier copy() {
-        return null;
+        return this.copy();
     }
 
     @Override

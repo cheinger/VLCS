@@ -13,7 +13,7 @@ public class VOCLRunner
         BufferedReader br = new BufferedReader(new FileReader(args[0]));
         ArffReader arff = new ArffReader(br);
         System.out.println("Read in data");
-        final int chunk_size = 1000;//96; //172
+        final int chunk_size = 96;// 1000;//96; //172
         VOCL vocl = new VOCL(VOCL.VagueLabelMethod.CLUSTER);
         vocl.labelStream(arff.getData(), chunk_size);
     }

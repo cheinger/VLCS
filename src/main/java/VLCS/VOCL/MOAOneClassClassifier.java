@@ -40,7 +40,7 @@ public class MOAOneClassClassifier extends WEKAClassifier implements Classifier 
         try {
             votes = this.classifier.distributionForInstance(inst);
         } catch (Exception var4) {
-//            System.err.println(var4.getMessage());
+            System.err.println(var4.getMessage());
         }
         return votes;
     }
