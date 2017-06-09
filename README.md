@@ -2,6 +2,15 @@
 
 Vague One-Class Learning and Concept Summarization
 
+
+```
+mvn package
+java -cp ./target/vlcs-1.0-SNAPSHOT-jar-with-dependencies.jar VOCLRunner 'powersupply.arff' 13 2
+```
+
+
+```
+
 # References
 
 - (Main) One-Class Learning and Concept Summarization for Vaguely Labeled Data Streams
