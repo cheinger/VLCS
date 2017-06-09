@@ -7,9 +7,6 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.AbstractMap.SimpleEntry;
 
-/**
- * Created by xavier on 7/06/17.
- */
 public class ClusterVagueLabeling extends VagueLabeling {
 
     private final int k = 20; // Recommended in paper
@@ -56,7 +53,7 @@ public class ClusterVagueLabeling extends VagueLabeling {
         // Calculate cluster_sizes
         Arrays.stream(cluster_ids).forEach(id -> cluster_sizes[id]++);
 
-        int max_pos_labels = 20;//(int) (chunk.size() * this.alpha);
+        int max_pos_labels = (int) (chunk.size() * this.alpha);
 
         assert sorted_clusters.size() == 0 : "sorted clusters should be empty before each call.";
 
