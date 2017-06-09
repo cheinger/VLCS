@@ -56,7 +56,7 @@ public class ClusterVagueLabeling extends VagueLabeling {
         // Calculate cluster_sizes
         Arrays.stream(cluster_ids).forEach(id -> cluster_sizes[id]++);
 
-        int max_pos_labels = 20;//(int) (chunk.size() * this.alpha);
+        int max_pos_labels = (int) (chunk.size() * this.alpha);
 
         assert sorted_clusters.size() == 0 : "sorted clusters should be empty before each call.";
 

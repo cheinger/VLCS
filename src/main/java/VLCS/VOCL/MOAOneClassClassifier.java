@@ -23,6 +23,7 @@ public class MOAOneClassClassifier extends WEKAClassifier implements Classifier 
         this.classifier.buildClassifier(instances);
     }
 
+
     @Override
     public double classifyInstance(Instance instance) throws Exception {
         return this.classifier.classifyInstance(instance);
@@ -31,6 +32,17 @@ public class MOAOneClassClassifier extends WEKAClassifier implements Classifier 
     @Override
     public double[] distributionForInstance(Instance instance) throws Exception {
         return this.classifier.distributionForInstance(instance);
+    }
+
+    @Override
+    public double[] getVotesForInstance(Instance inst) {
+        double[] votes = new double[inst.numClasses()];
+        try {
+            votes = this.classifier.distributionForInstance(inst);
+        } catch (Exception var4) {
+//            System.err.println(var4.getMessage());
+        }
+        return votes;
     }
 
     @Override

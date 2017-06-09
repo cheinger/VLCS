@@ -44,7 +44,7 @@ public class VOCL {
         this.local = new LocalWeighting(4); // Specify number of folds
         this.global = new GlobalWeighting();
         this.class_idx = 13; // FIXME
-        this.attr_idx = 1; // FIXME
+        this.attr_idx = 2; // FIXME
     }
 
     /**
@@ -82,6 +82,8 @@ public class VOCL {
      */
     private double processChunk(Instances chunk) throws Exception {
 
+        double predicted_accuracy = 0.f;
+
         int[] PSi = vague_clustering.label(chunk);
 
         // Create copy: Filter chunk by attribute & specify chunk class index
@@ -92,7 +94,7 @@ public class VOCL {
         if (ensemble.size() > 0)
         {
             for (Instance instance : attr_chunk) {
-//            System.out.println("Classifier accuracy: " + evaluateChunkAccuracy(Li, attr_chunk));
+                System.out.println("Classifier accuracy: " + evaluateChunkAccuracy( null, attr_chunk));
                 System.out.println("VOTE: ------------");
                 double[] votes = ensemble.getVotesForInstance(instance);
                 for (int i = 0; i < votes.length; i++) {
@@ -106,7 +108,7 @@ public class VOCL {
         float[] Wx = calculateUnifiedWeights(WLx, WGx);
 
         for (int i = 0; i < Wx.length; i++) {
-            System.out.println("UNIFIED WEIGHT: " + WGx[i]);
+            System.out.println("UNIFIED WEIGHT: " + Wx[i]);
         }
         System.out.println("UNIFIED WEIGHT ======" + ensemble.size());
         MOAOneClassClassifier Li = trainNewClassifier(attr_chunk, Wx);
@@ -134,7 +136,7 @@ public class VOCL {
     public Prediction getPrediction(Classifier classifier, Instance test) throws Exception {
 
         double actual = test.classValue();
-        double [] dist = classifier.distributionForInstance(test);
+        double [] dist = ensemble.getVotesForInstance(test);//classifier.distributionForInstance(test);
         if (test.classAttribute().isNominal()) {
             return new NominalPrediction(actual, dist, test.weight());
         } else {
@@ -254,6 +256,8 @@ public class VOCL {
 
     /**
      * Trains a new classifier using unified weights.
+     *
+     * NOTE: Had to use weka's buildClassifier instead of trainOnInstance so that I could
      *
      * Trains a new classifier given the unified weights.
      * @param chunk             The testing data set
